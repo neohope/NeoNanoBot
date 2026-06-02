@@ -8,7 +8,6 @@ from typing import Any
 
 from neonanobot.agent.hook import AgentHook, SDKCaptureHook
 from neonanobot.agent.loop import AgentLoop
-from neonanobot.providers.image_generation import image_gen_provider_configs
 
 
 @dataclass(slots=True)
@@ -64,7 +63,6 @@ class neonanobot:
 
         loop = AgentLoop.from_config(
             config,
-            image_generation_provider_configs=image_gen_provider_configs(config),
         )
         return cls(loop)
 

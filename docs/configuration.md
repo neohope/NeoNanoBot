@@ -390,7 +390,7 @@ Existing configs do not need to change. If you do not set `modelPresets` or `age
 
 Each fallback candidate can be either:
 
-- A preset name from `modelPresets`, such as `"deep"`. The preset's full model, provider, generation, and context-window config is used.
+- A preset name from `modelPresets`, such as `"deep"`. The preset's full model, provider, and context-window config is used.
 - An inline fallback object with at least `provider` and `model`. Optional `maxTokens`, `contextWindowTokens`, and `temperature` fields inherit from the active primary config when omitted. `reasoningEffort` does not inherit; omit it to leave reasoning off for that fallback, or set it explicitly for models that support reasoning.
 
 ```json
@@ -611,11 +611,6 @@ If you want to always use the local conversion, you can force it using:
 |--------|------|---------|-------------|
 | `useJinaReader` | boolean | `true` | If true, Jina Reader will be preferred over the local conversion |
 
-## Image Generation
-
-Image generation is configured under `tools.imageGeneration` and uses credentials from the selected provider's `providers.<name>` block.
-
-See [Image Generation](./image-generation.md) for WebUI usage, provider examples, artifact storage, and troubleshooting.
 
 ## MCP (Model Context Protocol)
 

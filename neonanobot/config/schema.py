@@ -12,7 +12,6 @@ from neonanobot.cron.types import CronSchedule
 
 if TYPE_CHECKING:
     from neonanobot.agent.tools.cli_apps import CliAppsToolConfig
-    from neonanobot.agent.tools.image_generation import ImageGenerationToolConfig
     from neonanobot.agent.tools.self import MyToolConfig
     from neonanobot.agent.tools.shell import ExecToolConfig
     from neonanobot.agent.tools.web import WebToolsConfig
@@ -265,9 +264,6 @@ class ToolsConfig(Base):
     exec: ExecToolConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.shell", "ExecToolConfig"))
     cli_apps: CliAppsToolConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.cli_apps", "CliAppsToolConfig"))
     my: MyToolConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.self", "MyToolConfig"))
-    image_generation: ImageGenerationToolConfig = Field(
-        default_factory=lambda: _lazy_default("neonanobot.agent.tools.image_generation", "ImageGenerationToolConfig"),
-    )
     restrict_to_workspace: bool = False  # policy intent: keep tool access inside workspace when possible
     webui_allow_local_service_access: bool = Field(
         default=True,
@@ -465,7 +461,6 @@ def _resolve_tool_config_refs() -> None:
     import sys
 
     from neonanobot.agent.tools.cli_apps import CliAppsToolConfig
-    from neonanobot.agent.tools.image_generation import ImageGenerationToolConfig
     from neonanobot.agent.tools.self import MyToolConfig
     from neonanobot.agent.tools.shell import ExecToolConfig
     from neonanobot.agent.tools.web import WebFetchConfig, WebSearchConfig, WebToolsConfig
@@ -478,7 +473,6 @@ def _resolve_tool_config_refs() -> None:
     mod.WebSearchConfig = WebSearchConfig  # type: ignore[attr-defined]
     mod.WebFetchConfig = WebFetchConfig  # type: ignore[attr-defined]
     mod.MyToolConfig = MyToolConfig  # type: ignore[attr-defined]
-    mod.ImageGenerationToolConfig = ImageGenerationToolConfig  # type: ignore[attr-defined]
 
     ToolsConfig.model_rebuild()
     Config.model_rebuild()

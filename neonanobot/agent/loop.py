@@ -54,7 +54,6 @@ from neonanobot.session.webui_turns import (
 from neonanobot.utils.document import extract_documents, reference_non_image_attachments
 from neonanobot.utils.helpers import image_placeholder_text
 from neonanobot.utils.helpers import truncate_text as truncate_text_fn
-from neonanobot.utils.image_generation_intent import image_generation_prompt
 from neonanobot.utils.llm_runtime import LLMRuntime
 from neonanobot.utils.runtime import (
     EMPTY_FINAL_RESPONSE_MESSAGE,
@@ -196,8 +195,6 @@ class AgentLoop:
         unified_session: bool = False,
         disabled_skills: list[str] | None = None,
         tools_config: ToolsConfig | None = None,
-        image_generation_provider_config: ProviderConfig | None = None,
-        image_generation_provider_configs: dict[str, ProviderConfig] | None = None,
         provider_snapshot_loader: Callable[..., ProviderSnapshot] | None = None,
         provider_signature: tuple[object, ...] | None = None,
         model_presets: dict[str, ModelPresetConfig] | None = None,
@@ -241,12 +238,6 @@ class AgentLoop:
         self.tools_config = _tc
         self.web_config = _tc.web
         self.exec_config = _tc.exec
-        self._image_generation_provider_configs = dict(image_generation_provider_configs or {})
-        if (
-            image_generation_provider_config is not None
-            and "openrouter" not in self._image_generation_provider_configs
-        ):
-            self._image_generation_provider_configs["openrouter"] = image_generation_provider_config
         self.cron_service = cron_service
         self.restrict_to_workspace = restrict_to_workspace
         self.workspace_scopes = WorkspaceScopeResolver(
@@ -480,7 +471,6 @@ class AgentLoop:
             cron_service=self.cron_service,
             sessions=self.sessions,
             provider_snapshot_loader=self._provider_snapshot_loader,
-            image_generation_provider_configs=self._image_generation_provider_configs,
             timezone=self.context.timezone or "UTC",
             workspace_sandbox=self.workspace_scopes.sandbox_status,
         )
@@ -593,7 +583,7 @@ class AgentLoop:
         scope = self.workspace_scopes.for_message(msg, session.metadata)
         return self.context.build_messages(
             history=history,
-            current_message=image_generation_prompt(msg.content, msg.metadata),
+            current_message="",
             media=msg.media if msg.media else None,
             channel=msg.channel,
             chat_id=self._runtime_chat_id(msg),

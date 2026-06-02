@@ -28,7 +28,6 @@ from neonanobot.webui.settings_api import (
     provider_models_payload,
     settings_payload,
     update_agent_settings,
-    update_image_generation_settings,
     update_model_configuration,
     update_network_safety_settings,
     update_provider_settings,
@@ -95,8 +94,6 @@ class WebUISettingsRouter:
             return await self._handle_settings_provider_oauth(request, "logout")
         if path == "/api/settings/web-search/update":
             return self._handle_settings_web_search_update(request)
-        if path == "/api/settings/image-generation/update":
-            return self._handle_settings_image_generation_update(request)
         if path == "/api/settings/network-safety/update":
             return self._handle_settings_network_safety_update(request)
         if path == "/api/settings/cli-apps":
@@ -257,15 +254,6 @@ class WebUISettingsRouter:
         except WebUISettingsError as e:
             return self._error_response(e.status, e.message)
         return self._json_response(self._with_restart_state(payload, section="browser"))
-
-    def _handle_settings_image_generation_update(self, request: WsRequest) -> Response:
-        if not self._authorized(request):
-            return self._unauthorized()
-        try:
-            payload = update_image_generation_settings(self._query(request))
-        except WebUISettingsError as e:
-            return self._error_response(e.status, e.message)
-        return self._json_response(self._with_restart_state(payload, section="image"))
 
     def _handle_settings_network_safety_update(self, request: WsRequest) -> Response:
         if not self._authorized(request):

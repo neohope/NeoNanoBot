@@ -17,10 +17,6 @@ import httpx
 
 from neonanobot.config.loader import get_config_path, load_config, save_config
 from neonanobot.config.schema import ModelPresetConfig
-from neonanobot.providers.image_generation import (
-    get_image_gen_provider,
-    image_gen_provider_names,
-)
 from neonanobot.providers.registry import PROVIDERS, find_by_name
 from neonanobot.security.workspace_access import workspace_sandbox_status
 from neonanobot.webui.workspaces import (
@@ -78,16 +74,6 @@ _WEB_SEARCH_PROVIDER_BY_NAME = {
     provider["name"]: provider for provider in _WEB_SEARCH_PROVIDER_OPTIONS
 }
 
-_IMAGE_GENERATION_ASPECT_RATIOS = {
-    "1:1",
-    "3:4",
-    "9:16",
-    "4:3",
-    "16:9",
-    "3:2",
-    "2:3",
-    "21:9",
-}
 _CONTEXT_WINDOW_TOKEN_OPTIONS = {65_536, 262_144}
 _MODEL_CONFIGURATION_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
 _ENV_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
@@ -531,34 +517,6 @@ def _validate_configured_provider(config: Any, provider: str) -> None:
         raise WebUISettingsError("provider is not configured")
 
 
-def _image_generation_provider_rows(config: Any) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for name in image_gen_provider_names():
-        spec = find_by_name(name)
-        provider_config = getattr(config.providers, name, None)
-        configured = (
-            _provider_configured_for_settings(spec, provider_config)
-            if spec is not None and provider_config is not None
-            else bool(getattr(provider_config, "api_key", None))
-        )
-        rows.append(
-            {
-                "name": name,
-                "label": spec.label if spec is not None else name,
-                "configured": configured,
-                "auth_type": "oauth" if spec is not None and spec.is_oauth else "api_key",
-                "api_key_hint": _mask_secret_hint(
-                    getattr(provider_config, "api_key", None)
-                ),
-                "api_base": getattr(provider_config, "api_base", None),
-                "default_api_base": (
-                    spec.default_api_base if spec and spec.default_api_base else None
-                ),
-            }
-        )
-    return rows
-
-
 def settings_payload(
     *,
     requires_restart: bool = False,
@@ -615,20 +573,10 @@ def settings_payload(
         providers.append(row)
 
     search_config = config.tools.web.search
-    image_config = config.tools.image_generation
     search_provider = (
         search_config.provider
         if search_config.provider in _WEB_SEARCH_PROVIDER_BY_NAME
         else "duckduckgo"
-    )
-    image_providers = _image_generation_provider_rows(config)
-    selected_image_provider = next(
-        (
-            provider
-            for provider in image_providers
-            if provider["name"] == image_config.provider
-        ),
-        None,
     )
     model_presets = [
         {
@@ -702,19 +650,6 @@ def settings_payload(
             "fetch": {
                 "use_jina_reader": config.tools.web.fetch.use_jina_reader,
             },
-        },
-        "image_generation": {
-            "enabled": image_config.enabled,
-            "provider": image_config.provider,
-            "provider_configured": bool(
-                selected_image_provider and selected_image_provider["configured"]
-            ),
-            "model": image_config.model,
-            "default_aspect_ratio": image_config.default_aspect_ratio,
-            "default_image_size": image_config.default_image_size,
-            "max_images_per_turn": image_config.max_images_per_turn,
-            "save_dir": image_config.save_dir,
-            "providers": image_providers,
         },
         "runtime": {
             "config_path": str(get_config_path().expanduser()),
@@ -989,12 +924,8 @@ def update_provider_settings(query: QueryParams) -> dict[str, Any]:
 
     if changed:
         save_config(config)
-    image_config = config.tools.image_generation
     restart_required = (
         changed
-        and image_config.enabled
-        and image_config.provider == spec.name
-        and get_image_gen_provider(spec.name) is not None
     )
     return settings_payload(requires_restart=restart_required)
 
@@ -1193,100 +1124,3 @@ def update_web_search_settings(query: QueryParams) -> dict[str, Any]:
         save_config(config)
     return settings_payload(requires_restart=restart_required)
 
-
-def update_image_generation_settings(query: QueryParams) -> dict[str, Any]:
-    config = load_config()
-    image_config = config.tools.image_generation
-    changed = False
-
-    provider_name = _query_first(query, "provider")
-    if provider_name is not None:
-        provider_name = provider_name.strip().lower()
-        if not provider_name:
-            raise WebUISettingsError("image generation provider is required")
-        if get_image_gen_provider(provider_name) is None:
-            raise WebUISettingsError("unknown image generation provider")
-        if image_config.provider != provider_name:
-            image_config.provider = provider_name
-            changed = True
-
-    enabled = _query_first(query, "enabled")
-    if enabled is not None:
-        parsed_enabled = _parse_bool(enabled, "enabled")
-        if image_config.enabled != parsed_enabled:
-            image_config.enabled = parsed_enabled
-            changed = True
-
-    model = _query_first(query, "model")
-    if model is not None:
-        model = model.strip()
-        if not model:
-            raise WebUISettingsError("image generation model is required")
-        if len(model) > 200:
-            raise WebUISettingsError("image generation model is too long")
-        if image_config.model != model:
-            image_config.model = model
-            changed = True
-
-    default_aspect_ratio = _query_first_alias(
-        query,
-        "default_aspect_ratio",
-        "defaultAspectRatio",
-    )
-    if default_aspect_ratio is not None:
-        default_aspect_ratio = default_aspect_ratio.strip()
-        if default_aspect_ratio not in _IMAGE_GENERATION_ASPECT_RATIOS:
-            raise WebUISettingsError("unsupported image generation aspect ratio")
-        if image_config.default_aspect_ratio != default_aspect_ratio:
-            image_config.default_aspect_ratio = default_aspect_ratio
-            changed = True
-
-    default_image_size = _query_first_alias(
-        query,
-        "default_image_size",
-        "defaultImageSize",
-    )
-    if default_image_size is not None:
-        default_image_size = default_image_size.strip()
-        if not default_image_size:
-            raise WebUISettingsError("default image size is required")
-        if len(default_image_size) > 32 or not all(
-            char.isascii() and (char.isalnum() or char in {"x", "X", ":", "-", "_"})
-            for char in default_image_size
-        ):
-            raise WebUISettingsError("unsupported image generation size")
-        if image_config.default_image_size != default_image_size:
-            image_config.default_image_size = default_image_size
-            changed = True
-
-    max_images_per_turn = _query_first_alias(
-        query,
-        "max_images_per_turn",
-        "maxImagesPerTurn",
-    )
-    if max_images_per_turn is not None:
-        try:
-            parsed_max = int(max_images_per_turn)
-        except ValueError:
-            raise WebUISettingsError("max_images_per_turn must be an integer") from None
-        if parsed_max < 1 or parsed_max > 8:
-            raise WebUISettingsError("max_images_per_turn must be between 1 and 8")
-        if image_config.max_images_per_turn != parsed_max:
-            image_config.max_images_per_turn = parsed_max
-            changed = True
-
-    if image_config.enabled:
-        selected_provider = next(
-            (
-                provider
-                for provider in _image_generation_provider_rows(config)
-                if provider["name"] == image_config.provider
-            ),
-            None,
-        )
-        if not selected_provider or not selected_provider["configured"]:
-            raise WebUISettingsError("image generation provider is not configured")
-
-    if changed:
-        save_config(config)
-    return settings_payload(requires_restart=changed)

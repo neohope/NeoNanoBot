@@ -37,9 +37,9 @@ Messages flow through an async `MessageBus` (`neonanobot/bus/queue.py`) that dec
 ### Key Subsystems
 
 - **Agent Loop** (`neonanobot/agent/loop.py`, `runner.py`): The core processing engine. `AgentLoop` manages session keys, hooks, and context building. `AgentRunner` executes the multi-turn LLM conversation with tool execution.
-- **LLM Providers** (`neonanobot/providers/`): Provider implementations (Anthropic, OpenAI-compatible, OpenAI Responses API, Azure, Bedrock, GitHub Copilot, OpenAI Codex, etc.) built on a common base (`base.py`). Includes image generation (`image_generation.py`). `factory.py` and `registry.py` handle instantiation and model discovery.
+- **LLM Providers** (`neonanobot/providers/`): Provider implementations (Anthropic, OpenAI-compatible, OpenAI Responses API, Azure, Bedrock, GitHub Copilot, OpenAI Codex, etc.) built on a common base (`base.py`). `factory.py` and `registry.py` handle instantiation and model discovery.
 - **Channels** (`neonanobot/channels/`): Platform integrations (Feishu,, WebSocket). `manager.py` discovers and coordinates them. Channels are auto-discovered via `pkgutil` scan + entry-point plugins.
-- **Tools** (`neonanobot/agent/tools/`): Agent capabilities exposed to the LLM: filesystem (read/write/edit/list), shell execution (with sandbox backends), web search/fetch, MCP servers, cron, notebook editing, subagent spawning, long-running tasks / sustained goals (`long_task.py`), image generation, and self-modification. Tools are auto-discovered via `pkgutil` scan + entry-point plugins.
+- **Tools** (`neonanobot/agent/tools/`): Agent capabilities exposed to the LLM: filesystem (read/write/edit/list), shell execution (with sandbox backends), web search/fetch, MCP servers, cron, notebook editing, subagent spawning, long-running tasks / sustained goals (`long_task.py`), and self-modification. Tools are auto-discovered via `pkgutil` scan + entry-point plugins.
 - **Memory** (`neonanobot/agent/memory.py`): Session history persistence with Dream two-phase memory consolidation. Uses atomic writes with fsync for durability.
 - **Session Management** (`neonanobot/session/`): Per-session history, context compaction, TTL-based auto-compaction (`manager.py`), and sustained goal state tracking (`goal_state.py`).
 - **Config** (`neonanobot/config/schema.py`, `loader.py`): Pydantic-based configuration loaded from `~/.neonanobot/config.json`. Supports camelCase aliases for JSON compatibility.
@@ -49,7 +49,7 @@ Messages flow through an async `MessageBus` (`neonanobot/bus/queue.py`) that dec
 - **Command Router** (`neonanobot/command/`): Slash command routing and built-in command handlers.
 - **Heartbeat** (`neonanobot/templates/HEARTBEAT.md`): Periodic task list checked via `cron` jobs (legacy dedicated service removed).
 - **Pairing** (`neonanobot/pairing/`): DM sender approval store with persistent pairing codes per channel.
-- **Skills** (`neonanobot/skills/`): Built-in skill definitions (long-goal, cron, github, image-generation, etc.) loaded into agent context.
+- **Skills** (`neonanobot/skills/`): Built-in skill definitions (long-goal, cron, github, etc.) loaded into agent context.
 - **Security** (`neonanobot/security/`): PTH file guard and other security measures activated at CLI entry.
 
 ### Entry Points

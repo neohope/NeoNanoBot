@@ -1566,13 +1566,6 @@ class WebSocketChannel(BaseChannel):
                 metadata["mcp_presets"] = mcp_presets
             metadata[WORKSPACE_SCOPE_METADATA_KEY] = scope.metadata()
             self._webui_workspaces.persist_scope(cid, scope)
-            image_generation = envelope.get("image_generation")
-            if isinstance(image_generation, dict) and image_generation.get("enabled") is True:
-                aspect_ratio = image_generation.get("aspect_ratio")
-                metadata["image_generation"] = {
-                    "enabled": True,
-                    "aspect_ratio": aspect_ratio if isinstance(aspect_ratio, str) else None,
-                }
             await self._handle_message(
                 sender_id=client_id,
                 chat_id=cid,
