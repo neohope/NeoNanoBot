@@ -212,7 +212,7 @@ class ApiConfig(Base):
     """OpenAI-compatible API server configuration."""
 
     host: str = "127.0.0.1"  # Safer default: local-only bind.
-    port: int = 8900
+    port: int = 8791
     timeout: float = 120.0  # Per-request timeout in seconds.
 
 
@@ -220,7 +220,7 @@ class GatewayConfig(Base):
     """Gateway/server configuration."""
 
     host: str = "127.0.0.1"  # Safer default: local-only bind.
-    port: int = 18790
+    port: int = 18791
     heartbeat: HeartbeatConfig = Field(default_factory=HeartbeatConfig)
 
 

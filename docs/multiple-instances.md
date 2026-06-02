@@ -78,7 +78,7 @@ Example config:
   },
   "gateway": {
     "host": "127.0.0.1",
-    "port": 18790
+    "port": 18791
   }
 }
 ```

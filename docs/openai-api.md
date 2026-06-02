@@ -7,7 +7,7 @@ pip install "neonanobot-ai[api]"
 neonanobot serve
 ```
 
-By default, the API binds to `127.0.0.1:8900`. You can change this in `config.json`.
+By default, the API binds to `127.0.0.1:8791`. You can change this in `config.json`.
 
 ## Behavior
 
@@ -39,7 +39,7 @@ If `channel` points to a channel that is not enabled in your config, neonanobot 
 ## curl
 
 ```bash
-curl http://127.0.0.1:8900/v1/chat/completions \
+curl http://127.0.0.1:8791/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [{"role": "user", "content": "hi"}],
@@ -52,7 +52,7 @@ curl http://127.0.0.1:8900/v1/chat/completions \
 Send images inline using the OpenAI multimodal content format:
 
 ```bash
-curl http://127.0.0.1:8900/v1/chat/completions \
+curl http://127.0.0.1:8791/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [{"role": "user", "content": [
@@ -68,12 +68,12 @@ Upload any supported file type (images, PDF, Word, Excel, PPT) via multipart:
 
 ```bash
 # Single file
-curl http://127.0.0.1:8900/v1/chat/completions \
+curl http://127.0.0.1:8791/v1/chat/completions \
   -F "message=Summarize this report" \
   -F "files=@report.docx"
 
 # Multiple files with session isolation
-curl http://127.0.0.1:8900/v1/chat/completions \
+curl http://127.0.0.1:8791/v1/chat/completions \
   -F "message=Compare these files" \
   -F "files=@chart.png" \
   -F "files=@data.xlsx" \
@@ -91,7 +91,7 @@ Supported file types:
 import requests
 
 resp = requests.post(
-    "http://127.0.0.1:8900/v1/chat/completions",
+    "http://127.0.0.1:8791/v1/chat/completions",
     json={
         "messages": [{"role": "user", "content": "hi"}],
         "session_id": "my-session",  # optional: isolate conversation
@@ -108,7 +108,7 @@ print(resp.json()["choices"][0]["message"]["content"])
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://127.0.0.1:8900/v1",
+    base_url="http://127.0.0.1:8791/v1",
     api_key="dummy",
 )
 

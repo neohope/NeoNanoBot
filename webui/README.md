@@ -59,7 +59,7 @@ bun install            # npm install also works
 bun run dev
 ```
 
-Then open `http://127.0.0.1:5173`.
+Then open `http://127.0.0.1:5432`.
 
 By default the dev server proxies `/api`, `/webui`, `/auth`, and WebSocket traffic to `http://127.0.0.1:4321`.
 

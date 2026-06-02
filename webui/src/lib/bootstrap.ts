@@ -78,7 +78,7 @@ export function deriveWsUrl(
   if (typeof window === "undefined") {
     return `ws://127.0.0.1:4321${path}${query}`;
   }
-  if (window.location.port === "5173") {
+  if (window.location.port === "5432") {
     const host = window.location.hostname.includes(":")
       ? `[${window.location.hostname}]`
       : window.location.hostname;
