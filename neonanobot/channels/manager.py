@@ -134,24 +134,6 @@ class ChannelManager:
 
         self._validate_allow_from()
 
-    def _resolve_transcription_key(self, provider: str) -> str:
-        """Pick the API key for the configured transcription provider."""
-        try:
-            if provider == "openai":
-                return self.config.providers.openai.api_key
-            return self.config.providers.groq.api_key
-        except AttributeError:
-            return ""
-
-    def _resolve_transcription_base(self, provider: str) -> str:
-        """Pick the API base URL for the configured transcription provider."""
-        try:
-            if provider == "openai":
-                return self.config.providers.openai.api_base or ""
-            return self.config.providers.groq.api_base or ""
-        except AttributeError:
-            return ""
-
     def _validate_allow_from(self) -> None:
         for name, ch in self.channels.items():
             cfg = ch.config
