@@ -14,10 +14,9 @@ Instead of storing secrets directly in `config.json`, you can use `${VAR_NAME}` 
 ```json
 {
   "channels": {
-    "telegram": { "token": "${TELEGRAM_TOKEN}" },
-    "email": {
-      "imapPassword": "${IMAP_PASSWORD}",
-      "smtpPassword": "${SMTP_PASSWORD}"
+    "feishu": {
+      "appid": "${YOUR_FEISHU_APP_ID}",
+      "appSecret": "${YOUR_FEISHU_APP_SECRET}"
     }
   },
   "providers": {
@@ -85,14 +84,6 @@ ExecStart=...
 # /home/youruser/nanobot_secrets.env (mode 600, owned by youruser)
 TELEGRAM_TOKEN=your-token-here
 IMAP_PASSWORD=your-password-here
-```
-
-**Docker** — pass an env file to the locally built image (one `KEY=VALUE` per line), or use `-e KEY=value`:
-
-```bash
-docker run --rm --env-file=./neonanobot.env \
-  -v ~/.neonanobot:/home/neonanobot/.neonanobot \
-  neonanobot agent -m "Hello"
 ```
 
 **direnv** — drop a `.envrc` in your working directory and run `direnv allow`:
@@ -457,7 +448,7 @@ Global settings that apply to all channels. Configure under the `channels` secti
     "sendMaxRetries": 3,
     "transcriptionProvider": "groq",
     "transcriptionLanguage": null,
-    "telegram": { ... }
+    "feishu": { ... }
   }
 }
 ```
@@ -480,7 +471,7 @@ global values stay as defaults for channels that do not set their own value:
   "channels": {
     "sendProgress": true,
     "sendToolHints": false,
-    "telegram": {
+    "feishu": {
       "enabled": true,
       "sendProgress": false
     },
@@ -507,8 +498,6 @@ When a channel `send()` raises, neonanobot retries at the channel-manager layer.
 
 > [!NOTE]
 > This design is deliberate: channel implementations should raise on delivery failure, and the channel manager owns the shared retry policy.
->
-> Some channels may still apply small API-specific retries internally. For example, Telegram separately retries timeout and flood-control errors before surfacing a final failure to the manager.
 >
 > If a channel is completely unreachable, neonanobot cannot notify the user through that same channel. Watch logs for `Failed to send to {channel} after N attempts` to spot persistent delivery failures.
 
@@ -728,8 +717,6 @@ For API keys, tokens, and other secrets, see [Environment Variables for Secrets]
 | `tools.exec.pathAppend` | `""` | Extra directories to append to `PATH` when running shell commands (e.g. `/usr/sbin` for `ufw`). |
 | `channels.*.allowFrom` | omitted | Access control per channel. Omit to use pairing-only mode; set `["*"]` to allow everyone; or list specific user IDs. See [Pairing](#pairing) for details. |
 
-**Docker security**: The official Docker image runs as a non-root user (`neonanobot`, UID 1000) with bubblewrap pre-installed. When using `docker-compose.yml`, the container drops all Linux capabilities except `SYS_ADMIN` (required for bwrap's namespace isolation).
-
 
 ## Pairing
 
@@ -895,7 +882,7 @@ When enabled, all incoming messages — regardless of which channel they arrive 
 | Cross-channel continuity | No | Yes |
 | `/new` clears | Current channel session | Shared session |
 | `/stop` finds tasks | By channel session | By shared session |
-| Existing `session_key_override` (e.g. Telegram thread) | Respected | Still respected — not overwritten |
+| Existing `session_key_override` (e.g. Feishu thread) | Respected | Still respected — not overwritten |
 
 > This is designed for single-user, multi-device setups. It is **off by default** — existing users see zero behavior change.
 

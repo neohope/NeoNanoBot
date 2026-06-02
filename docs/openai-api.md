@@ -23,8 +23,8 @@ Example tool call for cross-channel delivery from an API session:
 ```json
 {
   "content": "Build finished successfully.",
-  "channel": "telegram",
-  "chat_id": "123456789"
+  "channel": "feishu",
+  "chat_id": "ou123456789"
 }
 ```
 

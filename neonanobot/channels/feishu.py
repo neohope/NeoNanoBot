@@ -1815,7 +1815,7 @@ class FeishuChannel(BaseChannel):
             # Build session key for conversation isolation.
             # If topic_isolation is True: each topic gets its own session via root_id/message_id.
             # If topic_isolation is False: all messages in group share the same session.
-            # Private chat: no override — same behavior as Telegram/Slack.
+            # Private chat: no override.
             if chat_type == "group":
                 if self.config.topic_isolation:
                     session_key = f"feishu:{chat_id}:{root_id or message_id}"

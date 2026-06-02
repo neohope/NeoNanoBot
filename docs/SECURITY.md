@@ -41,14 +41,11 @@ chmod 600 ~/.neonanobot/config.json
 ```json
 {
   "channels": {
-    "telegram": {
+    "feishu": {
       "enabled": true,
-      "token": "YOUR_BOT_TOKEN",
+      "appid": "${YOUR_FEISHU_APP_ID}",
+      "appSecret": "${YOUR_FEISHU_APP_SECRET}"
       "allowFrom": ["123456789", "987654321"]
-    },
-    "whatsapp": {
-      "enabled": true,
-      "allowFrom": ["+1234567890"]
     }
   }
 }
@@ -56,8 +53,6 @@ chmod 600 ~/.neonanobot/config.json
 
 **Security Notes:**
 - In `v0.1.4.post3` and earlier, an empty `allowFrom` allowed all users. Since `v0.1.4.post4`, empty `allowFrom` denies all access by default — set `["*"]` to explicitly allow everyone.
-- Get your Telegram user ID from `@userinfobot`
-- Use full phone numbers with country code for WhatsApp
 - Review access logs regularly for unauthorized access attempts
 
 ### 3. Shell Command Execution
@@ -182,7 +177,7 @@ For production use:
 - Use separate API keys
 - Test with non-sensitive data
 - Enable verbose logging
-- Use a test Telegram bot
+- Use a test Feishu bot
 
 **Production:**
 - Use dedicated API keys with spending limits
@@ -232,8 +227,6 @@ If you suspect a security breach:
 
 ✅ **Secure Communication**
 - HTTPS for all external API calls
-- TLS for Telegram API
-- WhatsApp bridge: localhost-only binding + optional token auth
 
 ## Known Limitations
 

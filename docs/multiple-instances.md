@@ -35,7 +35,7 @@ neonanobot agent -c ~/.neonanobot-feishu/config.json -m "Hello from Feishu insta
 neonanobot agent -c ~/.neonanobot-webui/config.json -m "Hello from WebUI instance"
 
 # Optional one-off workspace override
-neonanobot agent -c ~/.neonanobot-telegram/config.json -w /tmp/neonanobot-telegram-test
+neonanobot agent -c ~/.neonanobot-feishu/config.json -w /tmp/neonanobot-feishu-test
 ```
 
 > `neonanobot agent` starts a local CLI agent using the selected workspace/config. It does not attach to or proxy through an already running `neonanobot gateway` process.
@@ -65,14 +65,15 @@ Example config:
 {
   "agents": {
     "defaults": {
-      "workspace": "~/.neonanobot-telegram/workspace",
+      "workspace": "~/.neonanobot-feishu/workspace",
       "model": "anthropic/claude-sonnet-4-6"
     }
   },
   "channels": {
-    "telegram": {
+    "feishu": {
       "enabled": true,
-      "token": "YOUR_TELEGRAM_BOT_TOKEN"
+      "appid": "YOUR_FEISHU_APP_ID",
+      "appSecret": "YOUR_FEISHU_APP_SECRET"
     }
   },
   "gateway": {

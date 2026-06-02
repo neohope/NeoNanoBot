@@ -27,29 +27,6 @@ uv tool install neonanobot-ai
 pip install neonanobot-ai
 ```
 
-### Update to latest version
-
-**PyPI / pip**
-
-```bash
-pip install -U neonanobot-ai
-neonanobot --version
-```
-
-**uv**
-
-```bash
-uv tool upgrade neonanobot-ai
-neonanobot --version
-```
-
-**Using WhatsApp?** Rebuild the local bridge after upgrading:
-
-```bash
-rm -rf ~/.neonanobot/bridge
-neonanobot channels login whatsapp
-```
-
 ## Quick Start
 
 > [!TIP]

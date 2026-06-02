@@ -35,7 +35,7 @@ def _make_console() -> Console:
     key off ``Console.is_terminal``. Forcing ``force_terminal=True`` overrode
     the ``isatty()`` check and caused control sequences (``\\x1b[?25l``,
     braille spinner frames) to pollute programmatic consumers such as
-    ``docker exec -i`` or pipes, even with ``NO_COLOR`` or ``TERM=dumb``.
+    pipes, even with ``NO_COLOR`` or ``TERM=dumb``.
     Deferring to ``isatty()`` keeps Rich output in interactive terminals
     and plain text everywhere else (#3265).
     """
