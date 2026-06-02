@@ -11,7 +11,7 @@ Behaviour:
   do not need a packaged `dist/`.
 - No-op when `webui/package.json` is absent (e.g. installing from an sdist that
   already contains a prebuilt `neonanobot/web/dist/`).
-- Skips when `NANOBOT_SKIP_WEBUI_BUILD=1` is set.
+- Skips when `NEONANOBOT_SKIP_WEBUI_BUILD=1` is set.
 - Skips when `neonanobot/web/dist/index.html` already exists, unless
   `NANOBOT_FORCE_WEBUI_BUILD=1` is set.
 - Uses `bun` when available, otherwise falls back to `npm`. The chosen tool
@@ -48,8 +48,8 @@ class WebUIBuildHook(BuildHookInterface):
             )
             return
 
-        if os.environ.get("NANOBOT_SKIP_WEBUI_BUILD") == "1":
-            self.app.display_info("[webui-build] skipped via NANOBOT_SKIP_WEBUI_BUILD=1")
+        if os.environ.get("NEONANOBOT_SKIP_WEBUI_BUILD") == "1":
+            self.app.display_info("[webui-build] skipped via NEONANOBOT_SKIP_WEBUI_BUILD=1")
             return
 
         if not package_json.is_file():
@@ -70,7 +70,7 @@ class WebUIBuildHook(BuildHookInterface):
         if runner is None:
             raise RuntimeError(
                 "[webui-build] neither `bun` nor `npm` is available on PATH; "
-                "install one or set NANOBOT_SKIP_WEBUI_BUILD=1 to bypass."
+                "install one or set NEONANOBOT_SKIP_WEBUI_BUILD=1 to bypass."
             )
 
         self.app.display_info(f"[webui-build] using {runner} to build webui")
