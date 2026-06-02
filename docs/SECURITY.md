@@ -117,13 +117,6 @@ pip-audit
 pip install --upgrade neonanobot-ai
 ```
 
-For Node.js dependencies (WhatsApp bridge):
-```bash
-cd bridge
-npm audit
-npm audit fix
-```
-
 **Important Notes:**
 - Keep `litellm` updated to the latest version for security fixes
 - We've updated `ws` to `>=8.17.1` to fix DoS vulnerability
@@ -151,7 +144,6 @@ For production use:
    ```bash
    chmod 700 ~/.neonanobot
    chmod 600 ~/.neonanobot/config.json
-   chmod 700 ~/.neonanobot/whatsapp-auth
    ```
 
 4. **Enable Logging**

@@ -87,7 +87,6 @@ IMAP_PASSWORD=your-password-here
 
 ```bash
 # .envrc (auto-loaded by direnv)
-export TELEGRAM_TOKEN=your-token-here
 export ANTHROPIC_API_KEY=...
 ```
 

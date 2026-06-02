@@ -105,7 +105,7 @@ class BaseChannel(ABC):
         """Stream a chunk of model reasoning/thinking content.
 
         Default is no-op. Channels with a native low-emphasis primitive
-        (Slack context block, WebUI italic bubble, ...) override to render reasoning
+        override to render reasoning
         as a subordinate trace that updates in place as the model thinks.
 
         Streaming contract mirrors :meth:`send_delta`: ``_reasoning_delta``

@@ -891,7 +891,7 @@ class WebSocketChannel(BaseChannel):
         if self._session_manager is None:
             return _http_error(503, "session manager unavailable")
         sessions = self._session_manager.list_sessions()
-        # Sidebar/chat listing for WS-backed sessions only — CLI / Slack / etc.
+        # Sidebar/chat listing for WS-backed sessions only — CLI / etc.
         # keys are not intended for resume over this HTTP surface.
         cleaned = []
         for s in sessions:

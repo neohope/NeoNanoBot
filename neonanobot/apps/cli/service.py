@@ -138,14 +138,10 @@ _BRANDS: dict[str, tuple[str, str]] = {
     "nsight-graphics": ("nvidia", "#76B900"),
     "unrealinsights": ("unrealengine", "#0E1128"),
     "ueatelier": ("unrealengine", "#0E1128"),
-    "ve-twini": ("x", "#000000"),
-    "wecom": ("wechat", "#07C160"),
     "suno": ("suno", "#000000"),
     "lldb": ("llvm", "#262D3A"),
     "android-cli": ("android", "#3DDC84"),
     "adguardhome": ("adguard", "#68BC71"),
-    "zotero": ("zotero", "#CC2936"),
-    "zoom": ("zoom", "#0B5CFF"),
 }
 
 _BRAND_DOMAINS: dict[str, tuple[str, str]] = {
