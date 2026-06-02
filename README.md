@@ -31,7 +31,7 @@ uv tool install neonanobot-ai
 pip install neonanobot-ai
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 **1. Initialize**
 

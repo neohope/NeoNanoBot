@@ -28,10 +28,6 @@ class BaseChannel(ABC):
 
     name: str = "base"
     display_name: str = "Base"
-    transcription_provider: str = "groq"
-    transcription_api_key: str = ""
-    transcription_api_base: str = ""
-    transcription_language: str | None = None
     send_progress: bool = True
     send_tool_hints: bool = False
     show_reasoning: bool = True
@@ -48,30 +44,6 @@ class BaseChannel(ABC):
         self.logger = logger.bind(channel=self.name)
         self.bus = bus
         self._running = False
-
-    async def transcribe_audio(self, file_path: str | Path) -> str:
-        """Transcribe an audio file via Whisper (OpenAI or Groq). Returns empty string on failure."""
-        if not self.transcription_api_key:
-            return ""
-        try:
-            if self.transcription_provider == "openai":
-                from neonanobot.providers.transcription import OpenAITranscriptionProvider
-                provider = OpenAITranscriptionProvider(
-                    api_key=self.transcription_api_key,
-                    api_base=self.transcription_api_base or None,
-                    language=self.transcription_language or None,
-                )
-            else:
-                from neonanobot.providers.transcription import GroqTranscriptionProvider
-                provider = GroqTranscriptionProvider(
-                    api_key=self.transcription_api_key,
-                    api_base=self.transcription_api_base or None,
-                    language=self.transcription_language or None,
-                )
-            return await provider.transcribe(file_path)
-        except Exception:
-            self.logger.exception("Audio transcription failed")
-            return ""
 
     async def login(self, force: bool = False) -> bool:
         """

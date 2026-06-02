@@ -78,11 +78,6 @@ class ChannelManager:
         """Initialize channels discovered via pkgutil scan + entry_points plugins."""
         from neonanobot.channels.registry import discover_channel_names, discover_enabled
 
-        transcription_provider = self.config.channels.transcription_provider
-        transcription_key = self._resolve_transcription_key(transcription_provider)
-        transcription_base = self._resolve_transcription_base(transcription_provider)
-        transcription_language = self.config.channels.transcription_language
-
         # Collect enabled module names first, then only import those.
         # Channel configs live in ChannelsConfig's extra fields (via
         # extra="allow"), so we enumerate candidates from pkgutil scan
@@ -123,10 +118,6 @@ class ChannelManager:
                     kwargs["runtime_surface"] = self._webui_runtime_surface
                     kwargs["runtime_capabilities_overrides"] = self._webui_runtime_capabilities
                 channel = cls(section, self.bus, **kwargs)
-                channel.transcription_provider = transcription_provider
-                channel.transcription_api_key = transcription_key
-                channel.transcription_api_base = transcription_base
-                channel.transcription_language = transcription_language
                 channel.send_progress = self._resolve_bool_override(
                     section, "send_progress", self.config.channels.send_progress,
                 )
