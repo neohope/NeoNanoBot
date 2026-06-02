@@ -783,24 +783,6 @@ export function SettingsView({
     }
   };
 
-  const runProviderOAuth = async (providerName: string, action: "login" | "logout") => {
-    if (providerSaving) return;
-    setProviderSaving(providerName);
-    try {
-      const payload =
-        action === "login"
-          ? await loginProviderOAuth(token, providerName)
-          : await logoutProviderOAuth(token, providerName);
-      applyPayload(payload);
-      setExpandedProvider(providerName);
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setProviderSaving(null);
-    }
-  };
-
   const saveWebSearch = async () => {
     if (!settings || webSearchSaving) return;
     const provider = settings.web_search.providers.find((item) => item.name === webSearchForm.provider);
@@ -1090,7 +1072,6 @@ export function SettingsView({
               saving={saving}
               showBrandLogos={localPrefs.brandLogos}
               providerSaving={providerSaving}
-              onProviderOAuthLogin={(provider) => runProviderOAuth(provider, "login")}
               onSave={saveModelSettings}
               onCreateConfiguration={openModelConfigurationDialog}
             />
@@ -1119,8 +1100,6 @@ export function SettingsView({
                 }))
               }
               onSaveProvider={saveProvider}
-              onProviderOAuthLogin={(provider) => runProviderOAuth(provider, "login")}
-              onProviderOAuthLogout={(provider) => runProviderOAuth(provider, "logout")}
               onResetProviderDraft={resetProviderDraft}
               imageProviderRestartPending={pendingRestartSections.image}
               onRestart={restartViaSettingsSurface}
@@ -1761,7 +1740,6 @@ function ModelsSettings({
   saving,
   showBrandLogos,
   providerSaving,
-  onProviderOAuthLogin,
   onSave,
   onCreateConfiguration,
 }: {
@@ -1773,16 +1751,14 @@ function ModelsSettings({
   saving: boolean;
   showBrandLogos: boolean;
   providerSaving: string | null;
-  onProviderOAuthLogin: (provider: string) => void;
   onSave: () => void;
   onCreateConfiguration: () => void;
 }) {
   const { t } = useTranslation();
   const tx = (key: string, fallback: string) => t(key, { defaultValue: fallback });
   const configuredProviders = settings.providers.filter((provider) => provider.configured);
-  const oauthProviders = settings.providers.filter((provider) => provider.auth_type === "oauth");
   const showAutoProvider = defaultPreset(settings)?.provider === "auto" || form.provider === "auto";
-  const selectableProviders = uniqueProviders([...configuredProviders, ...oauthProviders]);
+  const selectableProviders = uniqueProviders([...configuredProviders]);
   const providerOptions = showAutoProvider
     ? [{ name: "auto", label: tx("settings.values.auto", "Auto") }, ...selectableProviders]
     : selectableProviders;
@@ -1792,9 +1768,6 @@ function ModelsSettings({
   const selectedPreset =
     settings.model_presets.find((preset) => preset.name === form.modelPreset) ?? null;
   const selectedProvider = settings.providers.find((provider) => provider.name === form.provider);
-  const selectedProviderNeedsSignIn =
-    selectedProvider?.auth_type === "oauth" && !selectedProvider.configured;
-  const selectedProviderSigningIn = providerSaving === selectedProvider?.name;
   const modelFieldsMissing =
     !form.model.trim() ||
     !form.provider.trim() ||
@@ -1864,30 +1837,6 @@ function ModelsSettings({
               }
             />
           </SettingsRow>
-          {selectedProviderNeedsSignIn ? (
-            <SettingsRow
-              title={tx("settings.oauth.signInRequired", "Sign in required")}
-              description={tx(
-                "settings.oauth.signInBeforeSaving",
-                "Sign in before saving this OAuth provider as the active model provider.",
-              )}
-            >
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => selectedProvider && onProviderOAuthLogin(selectedProvider.name)}
-                disabled={!selectedProvider?.oauth_login_supported || selectedProviderSigningIn}
-                className="rounded-full"
-              >
-                {selectedProviderSigningIn ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-                ) : null}
-                {selectedProviderSigningIn
-                  ? tx("settings.oauth.signingIn", "Signing in...")
-                  : tx("settings.oauth.signIn", "Sign in")}
-              </Button>
-            </SettingsRow>
-          ) : null}
           <SettingsRow
             title={t("settings.rows.model")}
             description={t("settings.help.model")}
@@ -1926,12 +1875,8 @@ function ModelsSettings({
             dirty={dirty}
             saving={saving}
             saved={false}
-            disabled={selectedProviderNeedsSignIn || modelFieldsMissing}
-            message={
-              selectedProviderNeedsSignIn
-                ? tx("settings.oauth.signInBeforeSaving", "Sign in before saving this OAuth provider as the active model provider.")
-                : undefined
-            }
+            disabled={modelFieldsMissing}
+            message={ undefined }
             onSave={onSave}
           />
         </SettingsGroup>
@@ -1955,10 +1900,7 @@ function ProvidersSettings({
   onToggleProviderKeyEditing,
   onChangeProviderForm,
   onSaveProvider,
-  onProviderOAuthLogin,
-  onProviderOAuthLogout,
   onResetProviderDraft,
-  imageProviderRestartPending,
   onRestart,
   isRestarting,
 }: {
@@ -1976,8 +1918,6 @@ function ProvidersSettings({
   onToggleProviderKeyEditing: (provider: string) => void;
   onChangeProviderForm: (provider: string, value: Partial<ProviderForm>) => void;
   onSaveProvider: (provider: string) => void;
-  onProviderOAuthLogin: (provider: string) => void;
-  onProviderOAuthLogout: (provider: string) => void;
   onResetProviderDraft: (provider: string) => void;
   imageProviderRestartPending: boolean;
   onRestart?: () => void;
@@ -2000,15 +1940,14 @@ function ProvidersSettings({
       apiType: provider.api_type ?? "auto",
     };
     const saving = providerSaving === provider.name;
-    const isOauthProvider = provider.auth_type === "oauth";
     const keyVisible = !!visibleProviderKeys[provider.name];
     const editingKey = !provider.configured || !!editingProviderKeys[provider.name];
     const apiKeyRequired = provider.api_key_required ?? true;
     const apiKey = form.apiKey.trim();
     const apiBase = form.apiBase.trim();
-    const missingRequiredApiKey = !isOauthProvider && apiKeyRequired && !provider.configured && !apiKey;
+    const missingRequiredApiKey = apiKeyRequired && !provider.configured && !apiKey;
     const missingOptionalCredential =
-      !isOauthProvider && !apiKeyRequired && !provider.configured && !apiKey && !apiBase;
+      !apiKeyRequired && !provider.configured && !apiKey && !apiBase;
     return (
       <div key={provider.name} className="divide-y divide-border/45">
         <button
@@ -2031,11 +1970,7 @@ function ProvidersSettings({
             </span>
           </span>
           <StatusPill tone={provider.configured ? "success" : "neutral"}>
-            {isOauthProvider
-              ? provider.configured
-                ? tx("settings.oauth.signedIn", "Signed in")
-                : tx("settings.oauth.notSignedIn", "Not signed in")
-              : provider.configured
+            {provider.configured
                 ? t("settings.byok.configured")
                 : t("settings.byok.notConfigured")}
           </StatusPill>
@@ -2043,51 +1978,6 @@ function ProvidersSettings({
 
         {expanded ? (
           <div className="space-y-3 bg-muted/18 px-4 py-4 sm:px-5">
-            {isOauthProvider ? (
-              <div className="flex flex-col gap-3 rounded-[18px] border border-border/45 bg-background/75 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-foreground">
-                    {tx("settings.oauth.authentication", "OAuth authentication")}
-                  </p>
-                  <p className="mt-1 truncate text-[12px] text-muted-foreground">
-                    {provider.configured
-                      ? t("settings.oauth.signedInAs", {
-                          account: provider.oauth_account || provider.label,
-                          defaultValue: "Signed in as {{account}}",
-                        })
-                      : tx("settings.oauth.signInHelp", "Sign in from this device; no API key is stored in config.")}
-                  </p>
-                </div>
-                <div className="flex shrink-0 justify-end gap-2">
-                  {provider.configured ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onProviderOAuthLogout(provider.name)}
-                      disabled={saving}
-                      className="rounded-full"
-                    >
-                      {tx("settings.oauth.signOut", "Sign out")}
-                    </Button>
-                  ) : null}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onProviderOAuthLogin(provider.name)}
-                    disabled={saving || !provider.oauth_login_supported}
-                    className="rounded-full"
-                  >
-                    {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-                    {saving
-                      ? tx("settings.oauth.signingIn", "Signing in...")
-                      : provider.configured
-                        ? tx("settings.oauth.signInAgain", "Sign in again")
-                        : tx("settings.oauth.signIn", "Sign in")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
             <label className="block space-y-1.5">
               <span className="text-[12px] font-medium text-muted-foreground">
                 {t("settings.byok.apiKey")}
@@ -2210,8 +2100,6 @@ function ProvidersSettings({
                 {saving ? t("settings.actions.saving") : tx("settings.providers.saveProvider", "Save provider")}
               </Button>
             </div>
-              </>
-            )}
           </div>
         ) : null}
       </div>
@@ -2222,29 +2110,6 @@ function ProvidersSettings({
       <p className="max-w-[42rem] text-[13px] leading-6 text-muted-foreground">
         {t("settings.byok.description")}
       </p>
-      {imageProviderRestartPending && onRestart ? (
-        <div className="flex min-h-[48px] items-center justify-between gap-3 border-y border-border/55 py-3">
-          <p className="text-[13px] leading-5 text-muted-foreground">
-            {tx("settings.status.imageProviderRestart", "Image provider changes saved. Restart when ready.")}
-          </p>
-          <div className="shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onRestart}
-              disabled={isRestarting}
-              className="rounded-full"
-            >
-              {isRestarting ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : (
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              )}
-              {isRestarting ? t("app.system.restarting") : t("app.system.restart")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
