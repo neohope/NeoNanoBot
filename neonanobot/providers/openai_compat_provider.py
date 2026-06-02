@@ -21,16 +21,9 @@ import json_repair
 from loguru import logger
 
 from neonanobot.providers.base import LLMProvider, LLMResponse, ToolCallRequest
-from neonanobot.providers.openai_responses import (
-    consume_sdk_stream,
-    convert_messages,
-    convert_tools,
-    parse_response_output,
-)
 
 if TYPE_CHECKING:
     from openai import AsyncOpenAI as AsyncOpenAIType
-
     from neonanobot.providers.registry import ProviderSpec
 
 # Module-level placeholder — set lazily by _ensure_client on first real
@@ -46,11 +39,6 @@ _ALNUM = string.ascii_letters + string.digits
 
 _STANDARD_TC_KEYS = frozenset({"id", "type", "index", "function"})
 _STANDARD_FN_KEYS = frozenset({"name", "arguments"})
-_KIMI_THINKING_MODELS: frozenset[str] = frozenset({
-    "kimi-k2.5",
-    "kimi-k2.6",
-    "k2.6-code-preview",
-})
 # Thinking-capable MiMo models per Xiaomi docs (see
 # tests/providers/test_xiaomi_mimo_thinking.py). mimo-v2-flash is omitted
 # because it does not support thinking.
@@ -74,7 +62,6 @@ _GATEWAY_REASONING_STYLE_MAP: dict[str, Any] = {
     "reasoning_effort": lambda effort: {"reasoning": {"effort": effort}},
 }
 _MODEL_THINKING_STYLES: dict[str, str] = {
-    **dict.fromkeys(_KIMI_THINKING_MODELS, "thinking_type"),
     **dict.fromkeys(_MIMO_THINKING_MODELS, "thinking_type"),
 }
 
