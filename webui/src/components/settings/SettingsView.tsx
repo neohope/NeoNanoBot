@@ -23,17 +23,13 @@ import {
   EyeOff,
   Gem,
   Globe2,
-  Grid3X3,
   HardDrive,
   Hexagon,
   ImageIcon,
-  Layers,
   Loader2,
   LogOut,
-  Moon,
   PlayCircle,
   Plus,
-  Orbit,
   Palette,
   Pencil,
   RotateCcw,
@@ -43,10 +39,8 @@ import {
   SlidersHorizontal,
   Sparkles,
   Trash2,
-  Triangle,
   Waves,
   X,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -163,7 +157,7 @@ type ProviderApiType = "auto" | "chat_completions" | "responses";
 type ProviderForm = { apiKey: string; apiBase: string; apiType: ProviderApiType };
 type CustomMcpTransport = "stdio" | "streamableHttp" | "sse";
 
-const NANOBOT_ICON_SRC = "/brand/nanobot_icon.png";
+const NEONANOBOT_ICON_SRC = "/brand/neonanobot_icon.png";
 const CONTEXT_WINDOW_TOKEN_OPTIONS = [65_536, 262_144] as const;
 const DEFERRED_MODEL_LIST_PROVIDERS = new Set([
   "byteplus",
@@ -744,7 +738,6 @@ export function SettingsView({
     if (providerSaving) return;
     const provider = settings?.providers.find((item) => item.name === providerName);
     if (!provider) return;
-    if (provider.auth_type === "oauth") return;
     const providerForm = providerForms[providerName] ?? { apiKey: "", apiBase: "", apiType: "auto" };
     const apiKey = providerForm.apiKey.trim();
     const apiKeyRequired = provider.api_key_required ?? true;
@@ -1739,7 +1732,6 @@ function ModelsSettings({
   dirty,
   saving,
   showBrandLogos,
-  providerSaving,
   onSave,
   onCreateConfiguration,
 }: {
@@ -1767,7 +1759,6 @@ function ModelsSettings({
     : "";
   const selectedPreset =
     settings.model_presets.find((preset) => preset.name === form.modelPreset) ?? null;
-  const selectedProvider = settings.providers.find((provider) => provider.name === form.provider);
   const modelFieldsMissing =
     !form.model.trim() ||
     !form.provider.trim() ||
@@ -1901,8 +1892,6 @@ function ProvidersSettings({
   onChangeProviderForm,
   onSaveProvider,
   onResetProviderDraft,
-  onRestart,
-  isRestarting,
 }: {
   settings: SettingsPayload;
   expandedProvider: string | null;
@@ -4381,14 +4370,6 @@ function timezoneOffset(timezone: string): string {
   }
 }
 
-function optionRowsWithCurrent(
-  options: Array<{ name: string; label: string }>,
-  value: string,
-): Array<{ name: string; label: string }> {
-  if (!value || options.some((option) => option.name === value)) return options;
-  return [{ name: value, label: value }, ...options];
-}
-
 function modelPresetProviderKey(
   preset: SettingsPayload["model_presets"][number],
   settings: SettingsPayload,
@@ -4482,7 +4463,7 @@ function NanobotBrandLogo({
       aria-hidden
     >
       <img
-        src={NANOBOT_ICON_SRC}
+        src={NEONANOBOT_ICON_SRC}
         alt=""
         className={cn("select-none object-contain", size === "lg" ? "h-10 w-10" : "h-7 w-7")}
         draggable={false}
