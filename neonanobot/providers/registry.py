@@ -28,21 +28,21 @@ class ProviderSpec:
     """
 
     # identity
-    name: str  # config field name, e.g. "dashscope"
+    name: str  # config field name, e.g. "deepseek"
     keywords: tuple[str, ...]  # model-name keywords for matching (lowercase)
-    env_key: str  # env var for API key, e.g. "DASHSCOPE_API_KEY"
+    env_key: str  # env var for API key, e.g. "DEEPSEEK_API_KEY"
     display_name: str = ""  # shown in `neonanobot status`
 
     # which provider implementation to use
-    # "openai_compat" | "anthropic" | "azure_openai" | "openai_codex" | "github_copilot" | "bedrock"
+    # "openai_compat" | "anthropic" 
     backend: str = "openai_compat"
 
-    # extra env vars, e.g. (("ZHIPUAI_API_KEY", "{api_key}"),)
+    # extra env vars, e.g. (("DEEPSEEK_API_KEY", "{api_key}"),)
     env_extras: tuple[tuple[str, str], ...] = ()
 
     # gateway / local detection
-    is_gateway: bool = False  # routes any model (OpenRouter, AiHubMix)
-    is_local: bool = False  # local deployment (vLLM, Ollama)
+    is_gateway: bool = False  # routes any model
+    is_local: bool = False  # local deployment (Ollama)
     detect_by_key_prefix: str = ""  # match api_key prefix, e.g. "sk-or-"
     detect_by_base_keyword: str = ""  # match substring in api_base URL
     default_api_base: str = ""  # OpenAI-compatible base URL for this provider
@@ -71,11 +71,10 @@ class ProviderSpec:
 
     # Gateway-native reasoning control to pair with model-level thinking styles.
     # "reasoning_effort" — {"reasoning": {"effort": <none|minimal|...>}}
-    #                      (OpenRouter)
     gateway_reasoning_style: str = ""
 
     # When True, treat the "reasoning" response field as formal content
-    # when "content" is empty.  Only set this for providers (e.g. StepFun)
+    # when "content" is empty.  Only set this for providers 
     # whose API returns the actual answer in "reasoning" instead of "content".
     reasoning_as_content: bool = False
 
@@ -230,7 +229,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
 
 
 def find_by_name(name: str) -> ProviderSpec | None:
-    """Find a provider spec by config field name, e.g. "dashscope"."""
+    """Find a provider spec by config field name"""
     normalized = to_snake(name.replace("-", "_"))
     for spec in PROVIDERS:
         if spec.name == normalized:

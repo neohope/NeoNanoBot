@@ -43,12 +43,12 @@ neonanobot onboard
 
 Configure these **two parts** in your config (other options have defaults). Add or merge the following blocks into your existing config instead of replacing the whole file.
 
-*Set your API key* (e.g. [OpenRouter](https://openrouter.ai/keys), recommended for global users):
+*Set your API key* :
 
 ```json
 {
   "providers": {
-    "openrouter": {
+    "anthropic": {
       "apiKey": "sk-or-v1-xxx"
     }
   }
@@ -61,7 +61,7 @@ Configure these **two parts** in your config (other options have defaults). Add 
 {
   "agents": {
     "defaults": {
-      "provider": "openrouter",
+      "provider": "anthropic",
       "model": "anthropic/claude-opus-4-6"
     }
   }
@@ -76,7 +76,7 @@ neonanobot agent
 
 
 - Want different LLM providers, web search, MCP, security settings, or more config options? See [Configuration](./docs/configuration.md)
-- Want to run locally? Use [Atomic Chat](./docs/configuration.md#atomic-chat-local), [vLLM](./docs/configuration.md#vllm-local-openai-compatible), [Ollama](./docs/configuration.md#ollama-local), and [others](./docs/configuration.md#local-providers).
+- Want to run locally? Use [Ollama](./docs/configuration.md#ollama-local), and [others](./docs/configuration.md#local-providers).
 - Want to run neonanobot in chat apps like Feishu? See [Chat Apps](./docs/chat-apps.md)
 
 ## WebUI

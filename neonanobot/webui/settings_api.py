@@ -80,20 +80,11 @@ _ENV_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 _MODEL_LIST_UNSUPPORTED_BACKENDS = {
     "anthropic",
-    "azure_openai",
-    "bedrock",
-    "github_copilot",
-    "openai_codex",
 }
 
 _MODEL_LIST_CATALOG_PROVIDERS = {
-    "aihubmix",
     "byteplus",
     "byteplus_coding_plan",
-    "huggingface",
-    "novita",
-    "openrouter",
-    "siliconflow",
     "volcengine",
     "volcengine_coding_plan",
 }
@@ -217,8 +208,6 @@ def _resolve_env_placeholders(value: str | None) -> str | None:
 
 
 def _provider_requires_api_key(spec: Any) -> bool:
-    if spec.backend == "azure_openai":
-        return True
     if spec.is_oauth:
         return False
     if spec.is_local or spec.is_direct:
@@ -392,7 +381,6 @@ def provider_models_payload(query: QueryParams) -> dict[str, Any]:
     }
     if (
         spec.backend in _MODEL_LIST_UNSUPPORTED_BACKENDS
-        and spec.name != "minimax_anthropic"
     ) or spec.is_oauth:
         return {
             **base_payload,
@@ -426,14 +414,9 @@ def provider_models_payload(query: QueryParams) -> dict[str, Any]:
 
     headers = {"Accept": "application/json"}
     if api_key:
-        if spec.name == "minimax_anthropic":
-            headers["X-Api-Key"] = api_key
-        else:
-            headers["Authorization"] = f"Bearer {api_key}"
+        headers["Authorization"] = f"Bearer {api_key}"
 
     models_url = f"{api_base.rstrip('/')}/models"
-    if spec.name == "minimax_anthropic" and not api_base.rstrip("/").endswith("/v1"):
-        models_url = f"{api_base.rstrip('/')}/v1/models"
 
     try:
         response = httpx.get(
@@ -991,12 +974,6 @@ def logout_oauth_provider(query: QueryParams) -> dict[str, Any]:
         except ImportError:
             raise WebUISettingsError("oauth_cli_kit is not installed", status=500) from None
         token_path = FileTokenStorage(token_filename=OPENAI_CODEX_PROVIDER.token_filename).get_token_path()
-    elif spec.name == "github_copilot":
-        try:
-            from neonanobot.providers.github_copilot_provider import get_storage
-        except ImportError:
-            raise WebUISettingsError("GitHub Copilot OAuth support is unavailable", status=500) from None
-        token_path = get_storage().get_token_path()
     else:
         raise WebUISettingsError("OAuth logout is not supported for this provider")
 

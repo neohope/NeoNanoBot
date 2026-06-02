@@ -46,11 +46,6 @@ _ALNUM = string.ascii_letters + string.digits
 
 _STANDARD_TC_KEYS = frozenset({"id", "type", "index", "function"})
 _STANDARD_FN_KEYS = frozenset({"name", "arguments"})
-_DEFAULT_OPENROUTER_HEADERS = {
-    "HTTP-Referer": "https://github.com/neohope/neonanobot",
-    "X-OpenRouter-Title": "neonanobot",
-    "X-OpenRouter-Categories": "cli-agent,personal-agent",
-}
 _KIMI_THINKING_MODELS: frozenset[str] = frozenset({
     "kimi-k2.5",
     "kimi-k2.6",
@@ -135,7 +130,7 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _short_tool_id() -> str:
-    """9-char alphanumeric ID compatible with all providers (incl. Mistral)."""
+    """9-char alphanumeric ID compatible with all providers ."""
     return "".join(secrets.choice(_ALNUM) for _ in range(9))
 
 
@@ -193,13 +188,6 @@ def _extract_tc_extras(tc: Any) -> tuple[
             fn_prov = _coerce_dict(_get(fn_obj, "provider_specific_fields"))
 
     return extra_content, prov, fn_prov
-
-
-def _uses_openrouter_attribution(spec: "ProviderSpec | None", api_base: str | None) -> bool:
-    """Apply neonanobot attribution headers to OpenRouter requests by default."""
-    if spec and spec.name == "openrouter":
-        return True
-    return bool(api_base and "openrouter" in api_base.lower())
 
 
 _RESPONSES_FAILURE_THRESHOLD = 3
@@ -345,8 +333,6 @@ class OpenAICompatProvider(LLMProvider):
         effective_base = api_base or (spec.default_api_base if spec else None) or None
         self._effective_base = effective_base
         self._default_headers = {"x-session-affinity": uuid.uuid4().hex}
-        if _uses_openrouter_attribution(spec, effective_base):
-            self._default_headers.update(_DEFAULT_OPENROUTER_HEADERS)
         if extra_headers:
             self._default_headers.update(extra_headers)
         self._api_key_for_client = api_key or "no-key"
@@ -369,7 +355,7 @@ class OpenAICompatProvider(LLMProvider):
         timeout_s = _openai_compat_timeout_s()
         http_client: httpx.AsyncClient | None = None
         if self._is_local:
-            # Local model servers (Ollama, llama.cpp, vLLM) often close idle
+            # Local model servers (Ollama, llama.cpp) often close idle
             # HTTP connections before the client-side keepalive expires. When
             # two LLM calls happen seconds apart (e.g. heartbeat _decide then
             # process_direct), the second call may grab a now-dead pooled
@@ -473,7 +459,7 @@ class OpenAICompatProvider(LLMProvider):
 
     def _should_normalize_tool_call_ids(self) -> bool:
         """Return True for providers that reject normal OpenAI tool call IDs."""
-        return bool(self._spec and self._spec.name == "mistral")
+        return bool(False)
 
     @staticmethod
     def _normalize_tool_call_arguments(arguments: Any) -> str:
@@ -654,7 +640,7 @@ class OpenAICompatProvider(LLMProvider):
 
         # Normalize reasoning_effort into a semantic form (OpenAI vocab)
         # used for internal decisions, and a wire form actually sent out.
-        # "minimum" is accepted as a DashScope-native alias for "minimal".
+        # "minimum" is accepted as a native alias for "minimal".
         semantic_effort: str | None = None
         if isinstance(reasoning_effort, str):
             semantic_effort = reasoning_effort.lower()
@@ -662,9 +648,6 @@ class OpenAICompatProvider(LLMProvider):
                 semantic_effort = "minimal"
 
         wire_effort = reasoning_effort
-        if spec and spec.name == "dashscope" and semantic_effort == "minimal":
-            # DashScope accepts none/minimum/low/medium/high/xhigh; "minimal" 400s.
-            wire_effort = "minimum"
 
         if wire_effort and semantic_effort != "none":
             kwargs["reasoning_effort"] = wire_effort
@@ -682,14 +665,6 @@ class OpenAICompatProvider(LLMProvider):
                 extra = _gateway_reasoning_extra_body(gateway_style, semantic_effort)
                 if extra:
                     kwargs.setdefault("extra_body", {}).update(extra)
-
-            # Moonshot rejects requests that carry both 'reasoning_effort'
-            # and the native 'thinking' param.  We already expressed the
-            # user's intent via the provider-native shape, so drop the
-            # redundant wire-level kwarg.  Only kimi models need this —
-            # Xiaomi's API accepts both params.
-            if _model_slug(model_name) in _KIMI_THINKING_MODELS:
-                kwargs.pop("reasoning_effort", None)
 
         if tools:
             kwargs["tools"] = tools
@@ -994,7 +969,7 @@ class OpenAICompatProvider(LLMProvider):
             finish_reason = str(choice0.get("finish_reason") or "stop")
 
             raw_tool_calls: list[Any] = []
-            # StepFun: fallback to reasoning field when content is empty
+            # fallback to reasoning field when content is empty
             if not content and msg0.get("reasoning") and self._spec and self._spec.reasoning_as_content:
                 content = self._extract_text_content(msg0.get("reasoning"))
             reasoning_content = msg0.get("reasoning_content")
@@ -1188,7 +1163,7 @@ class OpenAICompatProvider(LLMProvider):
             if delta:
                 _accum_legacy_function_call(getattr(delta, "function_call", None))
 
-        # Some providers (e.g. Zhipu/GLM) reuse the same tool_call id for
+        # Some providers reuse the same tool_call id for
         # parallel tool calls in streaming mode. Deduplicate before building
         # the response so downstream tool messages don't collide.
         _seen_tc_ids: set[str] = set()
@@ -1283,7 +1258,7 @@ class OpenAICompatProvider(LLMProvider):
             msg += (
                 "\nHint: this is a local model endpoint. Check that the local server is reachable at "
                 f"{api_base or spec.default_api_base}, and if you are using a proxy/tunnel, make sure it "
-                "can reach your local Ollama/vLLM service instead of routing localhost through the remote host."
+                "can reach your local Ollama service instead of routing localhost through the remote host."
             )
 
         response = getattr(e, "response", None)
@@ -1413,12 +1388,7 @@ class OpenAICompatProvider(LLMProvider):
                 messages, tools, model, max_tokens, temperature,
                 reasoning_effort, tool_choice,
             )
-            if self._spec and self._spec.name == "zhipu" and tools and on_tool_call_delta:
-                # Z.AI/GLM keeps streaming tool-call arguments behind an
-                # explicit provider flag.  Pass it through the OpenAI SDK's
-                # extra_body escape hatch so the usual delta.tool_calls path
-                # can surface live file-edit progress.
-                kwargs.setdefault("extra_body", {})["tool_stream"] = True
+
             kwargs["stream"] = True
             kwargs["stream_options"] = {"include_usage": True}
             stream = await self._client.chat.completions.create(**kwargs)

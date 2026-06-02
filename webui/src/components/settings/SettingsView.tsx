@@ -166,18 +166,9 @@ type CustomMcpTransport = "stdio" | "streamableHttp" | "sse";
 const NANOBOT_ICON_SRC = "/brand/nanobot_icon.png";
 const CONTEXT_WINDOW_TOKEN_OPTIONS = [65_536, 262_144] as const;
 const DEFERRED_MODEL_LIST_PROVIDERS = new Set([
-  "aihubmix",
-  "atomic_chat",
   "byteplus",
   "byteplus_coding_plan",
-  "huggingface",
-  "lm_studio",
-  "novita",
   "ollama",
-  "openrouter",
-  "ovms",
-  "siliconflow",
-  "vllm",
   "volcengine",
   "volcengine_coding_plan",
 ]);
@@ -233,7 +224,7 @@ const OPENAI_API_TYPE_OPTIONS: Array<{ value: ProviderApiType; label: string }> 
 ];
 
 const LOCAL_UNCONFIGURED_PROVIDER_ORDER = new Map(
-  ["vllm", "ollama", "lm_studio", "atomic_chat", "ovms"].map((name, index) => [
+  ["ollama"].map((name, index) => [
     name,
     index,
   ]),

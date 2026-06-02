@@ -12,28 +12,16 @@ __all__ = [
     "LLMResponse",
     "AnthropicProvider",
     "OpenAICompatProvider",
-    "OpenAICodexProvider",
-    "GitHubCopilotProvider",
-    "AzureOpenAIProvider",
-    "BedrockProvider",
 ]
 
 _LAZY_IMPORTS = {
     "AnthropicProvider": ".anthropic_provider",
     "OpenAICompatProvider": ".openai_compat_provider",
-    "OpenAICodexProvider": ".openai_codex_provider",
-    "GitHubCopilotProvider": ".github_copilot_provider",
-    "AzureOpenAIProvider": ".azure_openai_provider",
-    "BedrockProvider": ".bedrock_provider",
 }
 
 if TYPE_CHECKING:
     from neonanobot.providers.anthropic_provider import AnthropicProvider
-    from neonanobot.providers.azure_openai_provider import AzureOpenAIProvider
-    from neonanobot.providers.bedrock_provider import BedrockProvider
-    from neonanobot.providers.github_copilot_provider import GitHubCopilotProvider
     from neonanobot.providers.openai_compat_provider import OpenAICompatProvider
-    from neonanobot.providers.openai_codex_provider import OpenAICodexProvider
 
 
 def __getattr__(name: str):

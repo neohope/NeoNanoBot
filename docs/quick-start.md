@@ -31,9 +31,8 @@ pip install neonanobot-ai
 
 > [!TIP]
 > Set your API key in `~/.neonanobot/config.json`.
-> Get API keys: [OpenRouter](https://openrouter.ai/keys) (Global)
 >
-> For other LLM providers, please see [`configuration.md`](./configuration.md).
+> Please see [`configuration.md`](./configuration.md).
 >
 > For web search capability setup, please see the web-search section in [`configuration.md`](./configuration.md#web-search).
 
@@ -49,11 +48,11 @@ Use `neonanobot onboard --wizard` if you want the interactive setup wizard.
 
 Configure these **two parts** in your config (other options have defaults).
 
-*Set your API key* (e.g. OpenRouter, recommended for global users):
+*Set your API key* :
 ```json
 {
   "providers": {
-    "openrouter": {
+    "anthropic": {
       "apiKey": "sk-or-v1-xxx"
     }
   }
@@ -66,7 +65,7 @@ Configure these **two parts** in your config (other options have defaults).
   "agents": {
     "defaults": {
       "model": "anthropic/claude-opus-4-5",
-      "provider": "openrouter"
+      "provider": "anthropic"
     }
   }
 }

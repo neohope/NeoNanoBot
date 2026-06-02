@@ -114,7 +114,7 @@ class AgentDefaults(Base):
     model_preset: str | None = None  # Active preset name — takes precedence over fields below
     model: str = "anthropic/claude-opus-4-5"
     provider: str = (
-        "auto"  # Provider name (e.g. "anthropic", "openrouter") or "auto" for auto-detection
+        "auto"  # Provider name (e.g. "anthropic", "oepnai") or "auto" for auto-detection
     )
     max_tokens: int = 8192
     context_window_tokens: int = 65_536
@@ -170,15 +170,8 @@ class ProviderConfig(Base):
     api_key: str | None = None
     api_base: str | None = None
     api_type: Literal["auto", "chat_completions", "responses"] = "auto"  # Request API surface
-    extra_headers: dict[str, str] | None = None  # Custom headers (e.g. APP-Code for AiHubMix)
+    extra_headers: dict[str, str] | None = None  # Custom headers
     extra_body: dict[str, Any] | None = None  # Extra provider request fields; shape depends on provider/API surface
-
-
-class BedrockProviderConfig(ProviderConfig):
-    """AWS Bedrock Runtime provider configuration."""
-
-    region: str | None = None  # AWS region, falls back to AWS_REGION/AWS_DEFAULT_REGION/profile
-    profile: str | None = None  # Optional AWS shared config profile
 
 
 class ProvidersConfig(Base):
@@ -416,7 +409,7 @@ class Config(BaseSettings):
         *,
         preset: ModelPresetConfig | None = None,
     ) -> str | None:
-        """Get the registry name of the matched provider (e.g. "deepseek", "openrouter")."""
+        """Get the registry name of the matched provider (e.g. "deepseek", "claude")."""
         _, name = self._match_provider(model, preset=preset)
         return name
 

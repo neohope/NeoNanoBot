@@ -133,8 +133,8 @@ def extract_reasoning(
     Single source of truth for "what reasoning did this response carry, and
     what answer text remains after we peel it out". Fallback order:
 
-    1. Dedicated ``reasoning_content`` (DeepSeek-R1, Kimi, MiMo, OpenAI
-       reasoning models, Bedrock).
+    1. Dedicated ``reasoning_content`` (DeepSeek-R1, MiMo, OpenAI
+       reasoning models).
     2. Anthropic ``thinking_blocks``.
     3. Inline ``<think>`` / ``<thought>`` blocks in ``content``.
 

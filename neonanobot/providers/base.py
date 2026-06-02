@@ -397,7 +397,7 @@ class LLMProvider(ABC):
     def _enforce_role_alternation(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Merge consecutive same-role messages and drop trailing assistant messages.
 
-        Some providers (OpenAI-compat, Azure, vLLM, Ollama, etc.) reject requests
+        Some providers (OpenAI-compat, Ollama, etc.) reject requests
         where the last message is 'assistant' (prefill not supported) or two
         consecutive non-system messages share the same role.
         """
@@ -437,7 +437,7 @@ class LLMProvider(ABC):
             last_popped = merged.pop()
 
         # If removing trailing assistant messages left only system messages,
-        # the request would be invalid for most providers (e.g. Zhipu/GLM
+        # the request would be invalid for most providers (e.g. 
         # error 1214).  Recover by converting the last popped assistant
         # message to a user message so the LLM can still see the content.
         if (

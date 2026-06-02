@@ -521,7 +521,6 @@ def onboard(
         console.print(f"  2. Start gateway: [cyan]{gateway_cmd}[/cyan]")
     else:
         console.print(f"  1. Add your API key to [cyan]{config_path}[/cyan]")
-        console.print("     Get one at: https://openrouter.ai/keys")
         console.print(f"  2. Chat: [cyan]{agent_cmd}[/cyan]")
     console.print(
         "\n[dim]Want Feishu? See: https://github.com/neohope/neonanobot#-chat-apps[/dim]"
@@ -1718,8 +1717,6 @@ _LOGIN_HANDLERS: dict[str, Callable[[], None]] = {}
 _LOGOUT_HANDLERS: dict[str, Callable[[], None]] = {}
 
 _PROVIDER_DISPLAY: dict[str, str] = {
-    "openai_codex": "OpenAI Codex",
-    "github_copilot": "GitHub Copilot",
 }
 
 

@@ -113,7 +113,7 @@ client = OpenAI(
 )
 
 resp = client.chat.completions.create(
-    model="MiniMax-M2.7",
+    model="DeepSeek",
     messages=[{"role": "user", "content": "hi"}],
     extra_body={"session_id": "my-session"},  # optional: isolate conversation
 )

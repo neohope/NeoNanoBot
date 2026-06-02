@@ -190,7 +190,7 @@ the model name contains `mimo`. The default API base is
 <details>
 <summary><b>Custom Provider (Any OpenAI-compatible API)</b></summary>
 
-Connects directly to any OpenAI-compatible endpoint — llama.cpp, Together AI, Fireworks, Azure OpenAI, or any self-hosted server. Model name is passed as-is.
+Connects directly to any OpenAI-compatible endpoint — llama.cpp, Together AI, Fireworks, or any self-hosted server. Model name is passed as-is.
 
 ```json
 {
@@ -210,31 +210,9 @@ Connects directly to any OpenAI-compatible endpoint — llama.cpp, Together AI, 
 
 > For local servers that don't require authentication, set `apiKey` to `null`.
 >
-> `custom` is the right choice for providers that expose an OpenAI-compatible **chat completions** API. It does **not** force third-party endpoints onto the OpenAI/Azure **Responses API**.
->
-> If your proxy or gateway is specifically Responses-API-compatible, use the `azure_openai` provider shape instead and point `apiBase` at that endpoint:
->
-> ```json
-> {
->   "providers": {
->     "azure_openai": {
->       "apiKey": "your-api-key",
->       "apiBase": "https://api.your-provider.com",
->       "defaultModel": "your-model-name"
->     }
->   },
->   "agents": {
->     "defaults": {
->       "provider": "azure_openai",
->       "model": "your-model-name"
->     }
->   }
-> }
-> ```
->
-> In short: **chat-completions-compatible endpoint → `custom`**; **Responses-compatible endpoint → `azure_openai`**.
+> `custom` is the right choice for providers that expose an OpenAI-compatible **chat completions** API. 
 
-Some OpenAI-compatible gateways expose request-body extensions such as vLLM guided decoding or local sampling controls. Put those under `extraBody`; neonanobot merges them into the chat-completions request body after its provider defaults:
+Some OpenAI-compatible gateways expose request-body extensions guided decoding or local sampling controls. Put those under `extraBody`; neonanobot merges them into the chat-completions request body after its provider defaults:
 
 ```json
 {
@@ -321,12 +299,12 @@ That's it! Environment variables, model routing, config matching, and `neonanobo
 | Field | Description | Example |
 |-------|-------------|---------|
 | `default_api_base` | OpenAI-compatible base URL | `"https://api.deepseek.com"` |
-| `env_extras` | Additional env vars to set | `(("ZHIPUAI_API_KEY", "{api_key}"),)` |
-| `model_overrides` | Per-model parameter overrides | `(("kimi-k2.5", {"temperature": 1.0}), ("kimi-k2.6", {"temperature": 1.0}),)` |
-| `is_gateway` | Can route any model (like OpenRouter) | `True` |
+| `env_extras` | Additional env vars to set | `(("DEEPSEEK_API_KEY", "{api_key}"),)` |
+| `model_overrides` | Per-model parameter overrides | `(("deepseek", {"temperature": 1.0}), ("kimi-k2.6", {"temperature": 1.0}),)` |
+| `is_gateway` | Can route any model | `True` |
 | `detect_by_key_prefix` | Detect gateway by API key prefix | `"sk-or-"` |
-| `detect_by_base_keyword` | Detect gateway by API base URL | `"openrouter"` |
-| `strip_model_prefix` | Strip provider prefix before sending to gateway | `True` (for AiHubMix) |
+| `detect_by_base_keyword` | Detect gateway by API base URL | `"openai"` |
+| `strip_model_prefix` | Strip provider prefix before sending to gateway | `True` |
 | `supports_max_completion_tokens` | Use `max_completion_tokens` instead of `max_tokens`; required for providers that reject both being set simultaneously (e.g. VolcEngine) | `True` |
 
 </details>
