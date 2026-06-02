@@ -84,8 +84,6 @@
       "status": "Status",
       "localPreferences": "Local preferences",
       "presets": "Presets",
-      "imageGeneration": "Image generation",
-      "imageDefaults": "Defaults",
       "webSearch": "Web search",
       "webBehavior": "Behavior",
       "cliApps": "CLI apps",
@@ -137,15 +135,6 @@
       "maxResults": "Max results",
       "timeout": "Timeout",
       "jinaReader": "Jina reader",
-      "imageGeneration": "Image generation",
-      "imageProvider": "Image provider",
-      "imageProviderStatus": "Provider status",
-      "imageProviderBase": "Provider base",
-      "imageModel": "Image model",
-      "defaultAspectRatio": "Default aspect",
-      "defaultImageSize": "Default size",
-      "maxImagesPerTurn": "Max images per turn",
-      "imageSaveDir": "Save directory",
       "botName": "Bot name",
       "botIcon": "Bot icon",
       "timezone": "Timezone",
@@ -177,13 +166,6 @@
       "maxResults": "Results returned by each web_search call.",
       "timeout": "Seconds before a search provider request times out.",
       "jinaReader": "Use Jina Reader for web_fetch when available.",
-      "imageGeneration": "Expose generate_image in chats when a configured image provider is available.",
-      "imageProvider": "Choose the registry provider used by generate_image.",
-      "imageProviderStatus": "Image generation reuses provider credentials from Providers.",
-      "imageModel": "Model name sent to the selected image provider.",
-      "defaultAspectRatio": "Used when the prompt does not choose an aspect ratio.",
-      "defaultImageSize": "Size hint sent to providers that support it.",
-      "maxImagesPerTurn": "Upper bound for one generate_image request.",
       "botName": "Shown wherever neonanobot uses a display name.",
       "botIcon": "Short emoji or text shown with the bot name.",
       "timezone": "Used for schedules and time-aware replies.",
@@ -383,7 +365,6 @@
       "configuredCount": "{{count}} configured",
       "totalProviders": "{{count}} available",
       "webSearch": "Web search",
-      "imageGeneration": "Image generation",
       "workspace": "Workspace"
     },
     "providers": {
@@ -393,13 +374,6 @@
     },
     "legal": {
       "thirdPartyBrands": "Product names, logos, and brands are property of their respective owners. Use is for identification only and does not imply endorsement."
-    },
-    "image": {
-      "selectProvider": "Select provider",
-      "selectAspect": "Select aspect",
-      "selectSize": "Select size",
-      "configureProvider": "Configure provider",
-      "missingCredential": "Configure this provider before enabling image generation."
     },
     "apps": {
       "description": "Add app CLIs and MCP services neonanobot can use from chat.",
@@ -573,21 +547,6 @@
         "drag": "Drag to reorder"
       },
       "attachImage": "Attach image",
-      "imageMode": {
-        "label": "Image Generation",
-        "toggle": "Toggle image generation mode",
-        "placeholder": "Describe or edit an image…",
-        "aspectAria": "Image aspect ratio",
-        "aspectLabel": "Image aspect",
-        "aspect": {
-          "auto": "Auto",
-          "1_1": "Square 1:1",
-          "3_4": "Portrait 3:4",
-          "9_16": "Story 9:16",
-          "4_3": "Landscape 4:3",
-          "16_9": "Wide 16:9"
-        }
-      },
       "tools": {
         "search": "Search",
         "reason": "Reason",

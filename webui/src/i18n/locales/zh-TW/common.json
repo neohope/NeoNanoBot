@@ -84,8 +84,6 @@
       "status": "狀態",
       "localPreferences": "本機偏好",
       "presets": "預設",
-      "imageGeneration": "圖片生成",
-      "imageDefaults": "預設值",
       "webSearch": "網頁搜尋",
       "webBehavior": "行為",
       "identity": "身分",
@@ -116,15 +114,6 @@
       "maxResults": "最大結果數",
       "timeout": "逾時",
       "jinaReader": "Jina 閱讀器",
-      "imageGeneration": "圖片生成",
-      "imageProvider": "圖片供應商",
-      "imageProviderStatus": "供應商狀態",
-      "imageProviderBase": "供應商位址",
-      "imageModel": "圖片模型",
-      "defaultAspectRatio": "預設比例",
-      "defaultImageSize": "預設尺寸",
-      "maxImagesPerTurn": "每輪最大圖片數",
-      "imageSaveDir": "儲存目錄",
       "botName": "Bot 名稱",
       "botIcon": "Bot 圖示",
       "timezone": "時區",
@@ -154,13 +143,6 @@
       "maxResults": "每次 web_search 呼叫返回的結果數。",
       "timeout": "搜尋供應商請求逾時前的秒數。",
       "jinaReader": "可用時為 web_fetch 使用 Jina Reader。",
-      "imageGeneration": "配置圖片供應商後，在聊天中開放 generate_image。",
-      "imageProvider": "選擇 generate_image 使用的註冊供應商。",
-      "imageProviderStatus": "圖片生成會重用「供應商」中的憑證。",
-      "imageModel": "傳送給所選圖片供應商的模型名稱。",
-      "defaultAspectRatio": "提示詞未指定比例時使用。",
-      "defaultImageSize": "傳送給支援此選項的供應商的尺寸提示。",
-      "maxImagesPerTurn": "單次 generate_image 請求可生成的圖片上限。",
       "botName": "顯示在 neonanobot 使用顯示名稱的位置。",
       "botIcon": "顯示在 Bot 名稱旁的短 emoji 或文字。",
       "timezone": "用於排程和需要時間感知的回覆。",
@@ -275,20 +257,12 @@
       "configuredCount": "已配置 {{count}} 個",
       "totalProviders": "共 {{count}} 個可用",
       "webSearch": "網頁搜尋",
-      "imageGeneration": "圖片生成",
       "workspace": "工作區"
     },
     "providers": {
       "searchPlaceholder": "搜尋供應商",
       "noMatches": "沒有符合的供應商。",
       "saveProvider": "儲存供應商"
-    },
-    "image": {
-      "selectProvider": "選擇供應商",
-      "selectAspect": "選擇比例",
-      "selectSize": "選擇尺寸",
-      "configureProvider": "配置供應商",
-      "missingCredential": "啟用圖片生成前請先配置此供應商。"
     },
     "models": {
       "selectModel": "選擇模型",
@@ -573,21 +547,6 @@
         "drag": "拖曳排序"
       },
       "attachImage": "附加圖片",
-      "imageMode": {
-        "label": "圖片生成",
-        "toggle": "切換圖片生成模式",
-        "placeholder": "描述或編輯圖片…",
-        "aspectAria": "圖片畫幅",
-        "aspectLabel": "圖片畫幅",
-        "aspect": {
-          "auto": "自動",
-          "1_1": "方形 1:1",
-          "3_4": "直式 3:4",
-          "9_16": "故事版 9:16",
-          "4_3": "橫式 4:3",
-          "16_9": "寬螢幕 16:9"
-        }
-      },
       "tools": {
         "search": "搜尋",
         "reason": "推理",

@@ -11,7 +11,7 @@
  *   ``{ok: true, dataUrl, mime, bytes, origBytes, normalized}`` on success, or
  *   ``{ok: false, reason}`` for every recoverable failure — magic-bytes
  *   mismatch, unsupported MIME, decode error, or a post-normalization payload
- *   that *still* exceeds the budget (extreme aspect ratios).
+ *   that *still* exceeds the budget.
  */
 
 /// <reference lib="webworker" />

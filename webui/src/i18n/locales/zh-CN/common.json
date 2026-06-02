@@ -84,8 +84,6 @@
       "status": "状态",
       "localPreferences": "本地偏好",
       "presets": "预设",
-      "imageGeneration": "图片生成",
-      "imageDefaults": "默认值",
       "webSearch": "网页搜索",
       "webBehavior": "行为",
       "cliApps": "CLI 应用",
@@ -137,15 +135,6 @@
       "maxResults": "最大结果数",
       "timeout": "超时",
       "jinaReader": "Jina 阅读器",
-      "imageGeneration": "图片生成",
-      "imageProvider": "图片提供商",
-      "imageProviderStatus": "提供商状态",
-      "imageProviderBase": "提供商地址",
-      "imageModel": "图片模型",
-      "defaultAspectRatio": "默认比例",
-      "defaultImageSize": "默认尺寸",
-      "maxImagesPerTurn": "每轮最大图片数",
-      "imageSaveDir": "保存目录",
       "botName": "Bot 名称",
       "botIcon": "Bot 图标",
       "timezone": "时区",
@@ -177,13 +166,6 @@
       "maxResults": "每次 web_search 调用返回的结果数。",
       "timeout": "搜索提供商请求超时前的秒数。",
       "jinaReader": "可用时为 web_fetch 使用 Jina Reader。",
-      "imageGeneration": "配置图片提供商后，在聊天中开放 generate_image。",
-      "imageProvider": "选择 generate_image 使用的注册提供商。",
-      "imageProviderStatus": "图片生成会复用「提供商」里的凭据。",
-      "imageModel": "发送给所选图片提供商的模型名称。",
-      "defaultAspectRatio": "当提示词没有指定比例时使用。",
-      "defaultImageSize": "发送给支持此选项的提供商的尺寸提示。",
-      "maxImagesPerTurn": "单次 generate_image 请求可生成的图片上限。",
       "botName": "显示在 neonanobot 使用展示名称的地方。",
       "botIcon": "显示在 Bot 名称旁的短 emoji 或文字。",
       "timezone": "用于日程和需要时间感知的回复。",
@@ -383,7 +365,6 @@
       "configuredCount": "已配置 {{count}} 个",
       "totalProviders": "共 {{count}} 个可用",
       "webSearch": "网页搜索",
-      "imageGeneration": "图片生成",
       "workspace": "工作区"
     },
     "providers": {
@@ -393,13 +374,6 @@
     },
     "legal": {
       "thirdPartyBrands": "产品名称、Logo 和品牌归各自所有者所有；此处仅用于识别，不代表背书或合作。"
-    },
-    "image": {
-      "selectProvider": "选择提供商",
-      "selectAspect": "选择比例",
-      "selectSize": "选择尺寸",
-      "configureProvider": "配置提供商",
-      "missingCredential": "启用图片生成前请先配置此提供商。"
     },
     "apps": {
       "description": "添加 neonanobot 可在聊天中使用的 App CLI 和 MCP 服务。",
@@ -572,21 +546,6 @@
         "drag": "拖动排序"
       },
       "attachImage": "添加图片",
-      "imageMode": {
-        "label": "图片生成",
-        "toggle": "切换图片生成模式",
-        "placeholder": "描述或编辑图片…",
-        "aspectAria": "图片画幅",
-        "aspectLabel": "图片画幅",
-        "aspect": {
-          "auto": "自动",
-          "1_1": "方形 1:1",
-          "3_4": "竖版 3:4",
-          "9_16": "故事版 9:16",
-          "4_3": "横版 4:3",
-          "16_9": "宽屏 16:9"
-        }
-      },
       "tools": {
         "search": "搜索",
         "reason": "推理",

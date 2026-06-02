@@ -80,7 +80,6 @@ import {
   runCliAppAction,
   runMcpPresetAction,
   saveCustomMcpServer,
-  updateImageGenerationSettings,
   updateMcpServerTools,
   updateModelConfiguration,
   updateNetworkSafetySettings,
@@ -101,7 +100,6 @@ import { useClient } from "@/providers/ClientProvider";
 import type {
   CliAppInfo,
   CliAppsPayload,
-  ImageGenerationSettingsUpdate,
   McpPresetInfo,
   McpPresetsPayload,
   NetworkSafetySettingsUpdate,
@@ -241,8 +239,6 @@ const LOCAL_UNCONFIGURED_PROVIDER_ORDER = new Map(
   ]),
 );
 
-const IMAGE_ASPECT_RATIO_OPTIONS = ["1:1", "3:4", "9:16", "4:3", "16:9", "3:2", "2:3", "21:9"];
-const IMAGE_SIZE_OPTIONS = ["1K", "2K", "4K", "1024x1024", "1536x1024", "1024x1536"];
 const EMPTY_PENDING_RESTART_SECTIONS: PendingRestartSections = {
   runtime: false,
   browser: false,
@@ -342,7 +338,6 @@ export function SettingsView({
   const [mcpPresetAction, setMcpPresetAction] = useState<string | null>(null);
   const [providerSaving, setProviderSaving] = useState<string | null>(null);
   const [webSearchSaving, setWebSearchSaving] = useState(false);
-  const [imageGenerationSaving, setImageGenerationSaving] = useState(false);
   const [networkSafetySaving, setNetworkSafetySaving] = useState(false);
   const [hostEngineApplying, setHostEngineApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -373,14 +368,6 @@ export function SettingsView({
     maxResults: 5,
     timeout: 30,
     useJinaReader: true,
-  });
-  const [imageGenerationForm, setImageGenerationForm] = useState<ImageGenerationSettingsUpdate>({
-    enabled: false,
-    provider: "openrouter",
-    model: "openai/gpt-5.4-image-2",
-    defaultAspectRatio: "1:1",
-    defaultImageSize: "1K",
-    maxImagesPerTurn: 4,
   });
   const [networkSafetyForm, setNetworkSafetyForm] = useState<NetworkSafetySettingsUpdate>({
     webuiAllowLocalServiceAccess: true,
@@ -439,14 +426,6 @@ export function SettingsView({
       timeout: payload.web_search.timeout,
       useJinaReader: payload.web.fetch.use_jina_reader,
     }));
-    setImageGenerationForm({
-      enabled: payload.image_generation.enabled,
-      provider: payload.image_generation.provider,
-      model: payload.image_generation.model,
-      defaultAspectRatio: payload.image_generation.default_aspect_ratio,
-      defaultImageSize: payload.image_generation.default_image_size,
-      maxImagesPerTurn: payload.image_generation.max_images_per_turn,
-    });
     setNetworkSafetyForm({
       webuiAllowLocalServiceAccess: payload.advanced.webui_allow_local_service_access ?? payload.advanced.allow_local_preview_access ?? true,
       webuiDefaultAccessMode: visibleWebuiDefaultAccessMode(payload.advanced.webui_default_access_mode),
@@ -574,18 +553,6 @@ export function SettingsView({
       form.botIcon !== settings.agent.bot_icon
     );
   }, [form, settings]);
-
-  const imageGenerationDirty = useMemo(() => {
-    if (!settings) return false;
-    return (
-      imageGenerationForm.enabled !== settings.image_generation.enabled ||
-      imageGenerationForm.provider !== settings.image_generation.provider ||
-      imageGenerationForm.model !== settings.image_generation.model ||
-      imageGenerationForm.defaultAspectRatio !== settings.image_generation.default_aspect_ratio ||
-      imageGenerationForm.defaultImageSize !== settings.image_generation.default_image_size ||
-      imageGenerationForm.maxImagesPerTurn !== settings.image_generation.max_images_per_turn
-    );
-  }, [imageGenerationForm, settings]);
 
   const networkSafetyDirty = useMemo(() => {
     if (!settings) return false;
@@ -761,24 +728,6 @@ export function SettingsView({
       setError((err as Error).message);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const saveImageGenerationSettings = async () => {
-    if (!settings || !imageGenerationDirty || imageGenerationSaving) return;
-    setImageGenerationSaving(true);
-    try {
-      const payload = await updateImageGenerationSettings(token, imageGenerationForm);
-      applyPayload(payload);
-      if (payload.requires_restart) {
-        setPendingRestartSections((prev) => ({ ...prev, image: true }));
-      }
-      await maybeRestartHostEngine(payload);
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setImageGenerationSaving(false);
     }
   };
 
@@ -1188,22 +1137,6 @@ export function SettingsView({
             />
           </div>
         );
-      case "image":
-        return (
-          <ImageGenerationSettings
-            settings={settings}
-            form={imageGenerationForm}
-            dirty={imageGenerationDirty}
-            saving={imageGenerationSaving}
-            onChangeForm={setImageGenerationForm}
-            onSave={saveImageGenerationSettings}
-            onOpenProviders={() => setActiveSection("models")}
-            showBrandLogos={localPrefs.brandLogos}
-            onRestart={restartViaSettingsSurface}
-            isRestarting={isRestarting || hostEngineApplying}
-            requiresRestartPending={pendingRestartSections.image}
-          />
-        );
       case "browser":
         return (
           <WebSettings
@@ -1495,14 +1428,6 @@ function OverviewSettings({
   const webStatus = settings.web.enable
     ? tx("settings.values.enabled", "Enabled")
     : tx("settings.values.disabled", "Disabled");
-  const imageStatus = settings.image_generation.enabled
-    ? tx("settings.values.enabled", "Enabled")
-    : tx("settings.values.disabled", "Disabled");
-  const imageCaption = `${providerDisplayLabel(settings.image_generation.providers, settings.image_generation.provider)} · ${
-    settings.image_generation.provider_configured
-      ? tx("settings.values.configured", "Configured")
-      : tx("settings.values.notConfigured", "Not configured")
-  }`;
   return (
     <div className="space-y-7">
       <section>
@@ -1573,15 +1498,6 @@ function OverviewSettings({
             caption={webStatus}
             showBrandLogos={showBrandLogos}
             onClick={() => onSelectSection("browser")}
-          />
-          <OverviewListRow
-            icon={ImageIcon}
-            valueLogoProvider={settings.image_generation.provider}
-            title={tx("settings.overview.imageGeneration", "Image generation")}
-            value={imageStatus}
-            caption={imageCaption}
-            showBrandLogos={showBrandLogos}
-            onClick={() => onSelectSection("image")}
           />
         </SettingsGroup>
       </section>
@@ -2362,175 +2278,6 @@ function ProvidersSettings({
         {filteredUnconfigured.map(renderProviderRow)}
       </ProviderSection>
       <ThirdPartyBrandNotice />
-    </div>
-  );
-}
-
-function ImageGenerationSettings({
-  settings,
-  form,
-  dirty,
-  saving,
-  onChangeForm,
-  onSave,
-  onOpenProviders,
-  showBrandLogos,
-  onRestart,
-  isRestarting,
-  requiresRestartPending,
-}: {
-  settings: SettingsPayload;
-  form: ImageGenerationSettingsUpdate;
-  dirty: boolean;
-  saving: boolean;
-  onChangeForm: Dispatch<SetStateAction<ImageGenerationSettingsUpdate>>;
-  onSave: () => void;
-  onOpenProviders: () => void;
-  showBrandLogos: boolean;
-  onRestart?: () => void;
-  isRestarting?: boolean;
-  requiresRestartPending: boolean;
-}) {
-  const { t } = useTranslation();
-  const tx = (key: string, fallback: string) => t(key, { defaultValue: fallback });
-  const selectedProvider =
-    settings.image_generation.providers.find((provider) => provider.name === form.provider) ??
-    settings.image_generation.providers[0];
-  const providerConfigured = !!selectedProvider?.configured;
-  const missingCredential = form.enabled && !providerConfigured;
-  const aspectOptions = optionRowsWithCurrent(
-    IMAGE_ASPECT_RATIO_OPTIONS.map((value) => ({ name: value, label: value })),
-    form.defaultAspectRatio,
-  );
-  const sizeOptions = optionRowsWithCurrent(
-    IMAGE_SIZE_OPTIONS.map((value) => ({ name: value, label: value })),
-    form.defaultImageSize,
-  );
-
-  return (
-    <div className="space-y-7">
-      <section>
-        <SettingsSectionTitle>{tx("settings.sections.imageGeneration", "Image generation")}</SettingsSectionTitle>
-        <SettingsGroup>
-          <SettingsRow
-            title={tx("settings.rows.imageGeneration", "Image generation")}
-            description={tx("settings.help.imageGeneration", "Expose generate_image in chats when a configured image provider is available.")}
-          >
-            <ToggleButton
-              checked={form.enabled}
-              onChange={(enabled) => onChangeForm((prev) => ({ ...prev, enabled }))}
-              ariaLabel={tx("settings.rows.imageGeneration", "Image generation")}
-              label={form.enabled ? tx("settings.values.on", "On") : tx("settings.values.off", "Off")}
-            />
-          </SettingsRow>
-          <SettingsRow
-            title={tx("settings.rows.imageProvider", "Image provider")}
-            description={tx("settings.help.imageProvider", "Choose the registry provider used by generate_image.")}
-          >
-            <ProviderPicker
-              providers={settings.image_generation.providers}
-              value={form.provider}
-              emptyLabel={tx("settings.image.selectProvider", "Select provider")}
-              showProviderLogos={showBrandLogos}
-              onChange={(provider) => onChangeForm((prev) => ({ ...prev, provider }))}
-            />
-          </SettingsRow>
-          <SettingsRow
-            title={tx("settings.rows.imageProviderStatus", "Provider status")}
-            description={tx("settings.help.imageProviderStatus", "Image generation reuses provider credentials from Providers.")}
-          >
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <StatusPill tone={providerConfigured ? "success" : "neutral"}>
-                {providerConfigured
-                  ? tx("settings.values.configured", "Configured")
-                  : tx("settings.values.notConfigured", "Not configured")}
-              </StatusPill>
-              {!providerConfigured ? (
-                <Button size="sm" variant="outline" onClick={onOpenProviders} className="rounded-full">
-                  {tx("settings.image.configureProvider", "Configure provider")}
-                </Button>
-              ) : null}
-            </div>
-          </SettingsRow>
-          <SettingsRow title={tx("settings.rows.imageProviderBase", "Provider base")}>
-            <span className="max-w-[320px] truncate text-right text-[13px] text-muted-foreground">
-              {selectedProvider?.api_base || selectedProvider?.default_api_base || selectedProvider?.name || tx("settings.values.notAvailable", "Not available")}
-            </span>
-          </SettingsRow>
-        </SettingsGroup>
-      </section>
-
-      <section>
-        <SettingsSectionTitle>{tx("settings.sections.imageDefaults", "Defaults")}</SettingsSectionTitle>
-        <SettingsGroup>
-          <SettingsRow
-            title={tx("settings.rows.imageModel", "Image model")}
-            description={tx("settings.help.imageModel", "Model name sent to the selected image provider.")}
-          >
-            <Input
-              value={form.model}
-              onChange={(event) => onChangeForm((prev) => ({ ...prev, model: event.target.value }))}
-              className="h-8 w-[min(300px,70vw)] rounded-full text-[13px]"
-            />
-          </SettingsRow>
-          <SettingsRow
-            title={tx("settings.rows.defaultAspectRatio", "Default aspect")}
-            description={tx("settings.help.defaultAspectRatio", "Used when the prompt does not choose an aspect ratio.")}
-          >
-            <ProviderPicker
-              providers={aspectOptions}
-              value={form.defaultAspectRatio}
-              emptyLabel={tx("settings.image.selectAspect", "Select aspect")}
-              onChange={(defaultAspectRatio) =>
-                onChangeForm((prev) => ({ ...prev, defaultAspectRatio }))
-              }
-            />
-          </SettingsRow>
-          <SettingsRow
-            title={tx("settings.rows.defaultImageSize", "Default size")}
-            description={tx("settings.help.defaultImageSize", "Size hint sent to providers that support it.")}
-          >
-            <ProviderPicker
-              providers={sizeOptions}
-              value={form.defaultImageSize}
-              emptyLabel={tx("settings.image.selectSize", "Select size")}
-              onChange={(defaultImageSize) =>
-                onChangeForm((prev) => ({ ...prev, defaultImageSize }))
-              }
-            />
-          </SettingsRow>
-          <SettingsRow
-            title={tx("settings.rows.maxImagesPerTurn", "Max images per turn")}
-            description={tx("settings.help.maxImagesPerTurn", "Upper bound for one generate_image request.")}
-          >
-            <NumberInput
-              value={form.maxImagesPerTurn}
-              min={1}
-              max={8}
-              onChange={(maxImagesPerTurn) =>
-                onChangeForm((prev) => ({ ...prev, maxImagesPerTurn }))
-              }
-            />
-          </SettingsRow>
-          <ReadOnlyRow title={tx("settings.rows.imageSaveDir", "Save directory")} value={settings.image_generation.save_dir} />
-          <RestartSettingsFooter
-            dirty={dirty}
-            saving={saving}
-            pendingRestart={requiresRestartPending}
-            disabled={missingCredential}
-            message={
-              missingCredential
-                ? tx("settings.image.missingCredential", "Configure this provider before enabling image generation.")
-                : undefined
-            }
-            dirtyMessage={tx("settings.status.restartAfterSaving", "Save changes, then restart when ready.")}
-            pendingMessage={tx("settings.status.savedRestartApply", "Saved. Restart when ready.")}
-            onSave={onSave}
-            onRestart={onRestart}
-            isRestarting={isRestarting}
-          />
-        </SettingsGroup>
-      </section>
     </div>
   );
 }

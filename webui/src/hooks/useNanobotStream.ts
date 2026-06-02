@@ -12,7 +12,6 @@ import type { StreamError } from "@/lib/neonanobot-client";
 import type {
   InboundEvent,
   OutboundCliAppMention,
-  OutboundImageGeneration,
   OutboundMcpPresetMention,
   OutboundMedia,
   GoalStateWsPayload,
@@ -364,7 +363,6 @@ export interface SendImage {
 }
 
 export interface SendOptions {
-  imageGeneration?: OutboundImageGeneration;
   cliApps?: OutboundCliAppMention[];
   mcpPresets?: OutboundMcpPresetMention[];
   workspaceScope?: WorkspaceScopePayload | null;
