@@ -45,7 +45,7 @@ def _make_provider_core(
 
     if backend == "openai_compat":
         needs_key = not (p and p.api_key)
-        exempt = spec and (spec.is_oauth or spec.is_local or spec.is_direct)
+        exempt = spec and (spec.is_local or spec.is_direct)
         if needs_key and not exempt:
             raise ValueError(f"No API key configured for provider '{provider_name}'.")
 

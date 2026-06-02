@@ -79,7 +79,7 @@ class McpPreset:
     category: str
     description: str
     docs_url: str
-    transport: Literal["stdio", "streamableHttp", "sse", "oauth"]
+    transport: Literal["stdio", "streamableHttp", "sse"]
     install_supported: bool
     brand_domain: str
     brand_color: str

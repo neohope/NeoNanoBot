@@ -27,7 +27,7 @@ Examples (replace `keyword`):
 - `grep(pattern="keyword", path="memory/history.jsonl", case_insensitive=true)`
 - `grep(pattern="2026-04-02 10:00", path="memory/history.jsonl", fixed_strings=true)`
 - `grep(pattern="keyword", path="memory", glob="*.jsonl", output_mode="count", case_insensitive=true)`
-- `grep(pattern="oauth|token", path="memory", glob="*.jsonl", output_mode="content", case_insensitive=true)`
+- `grep(pattern="token", path="memory", glob="*.jsonl", output_mode="content", case_insensitive=true)`
 
 ## Important
 

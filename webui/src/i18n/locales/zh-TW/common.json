@@ -388,19 +388,6 @@
       "featured": "精選",
       "loading": "正在載入應用...",
       "empty": "沒有符合的應用。"
-    },
-    "oauth": {
-      "authentication": "OAuth 認證",
-      "signIn": "登入",
-      "signingIn": "登入中...",
-      "signInAgain": "重新登入",
-      "signOut": "登出",
-      "signedInAs": "已登入為 {{account}}",
-      "signInHelp": "從這台裝置登入；不會在配置中儲存 API key。",
-      "signInRequired": "需要登入",
-      "signInBeforeSaving": "將此 OAuth 供應商設為目前模型供應商前，請先登入。",
-      "signedIn": "已登入",
-      "notSignedIn": "未登入"
     }
   },
   "chat": {

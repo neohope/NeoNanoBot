@@ -23,8 +23,6 @@ from neonanobot.webui.settings_api import (
     WebUISettingsError,
     create_model_configuration,
     decorate_settings_payload,
-    login_oauth_provider,
-    logout_oauth_provider,
     provider_models_payload,
     settings_payload,
     update_agent_settings,
@@ -88,10 +86,6 @@ class WebUISettingsRouter:
             return self._handle_settings_provider_update(request)
         if path == "/api/settings/provider-models":
             return await self._handle_settings_provider_models(request)
-        if path == "/api/settings/provider/oauth-login":
-            return await self._handle_settings_provider_oauth(request, "login")
-        if path == "/api/settings/provider/oauth-logout":
-            return await self._handle_settings_provider_oauth(request, "logout")
         if path == "/api/settings/web-search/update":
             return self._handle_settings_web_search_update(request)
         if path == "/api/settings/network-safety/update":
@@ -228,23 +222,6 @@ class WebUISettingsRouter:
             self.logger.exception("failed to load provider model list")
             return self._error_response(500, "failed to load provider model list")
         return self._json_response(payload)
-
-    async def _handle_settings_provider_oauth(
-        self,
-        request: WsRequest,
-        action: str,
-    ) -> Response:
-        if not self._authorized(request):
-            return self._unauthorized()
-        query = self._query(request)
-        try:
-            if action == "login":
-                payload = await asyncio.to_thread(login_oauth_provider, query)
-            else:
-                payload = await asyncio.to_thread(logout_oauth_provider, query)
-        except WebUISettingsError as e:
-            return self._error_response(e.status, e.message)
-        return self._json_response(self._with_restart_state(payload))
 
     def _handle_settings_web_search_update(self, request: WsRequest) -> Response:
         if not self._authorized(request):

@@ -54,9 +54,6 @@ class ProviderSpec:
     # per-model param overrides, e.g. (("kimi-k2.5", {"temperature": 1.0}),)
     model_overrides: tuple[tuple[str, dict[str, Any]], ...] = ()
 
-    # OAuth-based providers (e.g., OpenAI Codex) don't use API keys
-    is_oauth: bool = False
-
     # Direct providers skip API-key validation (user supplies everything)
     is_direct: bool = False
 

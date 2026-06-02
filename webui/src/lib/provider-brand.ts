@@ -92,14 +92,12 @@ export function logoFallbackUrls(logoUrl: string | null | undefined): string[] {
 export const PROVIDER_BRAND_ALIASES: Record<string, string> = {
   byteplus_coding_plan: "byteplus",
   mimo: "xiaomi_mimo",
-  openai_codex: "openai",
   xiaomi: "xiaomi_mimo",
   volcengine_coding_plan: "volcengine",
 };
 
 export const PROVIDER_LABEL_ALIASES: Record<string, string> = {
   byteplus_coding_plan: "BytePlus",
-  openai_codex: "OpenAI",
   volcengine_coding_plan: "Volcengine",
 };
 

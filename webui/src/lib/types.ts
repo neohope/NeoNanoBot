@@ -284,15 +284,12 @@ export interface SettingsPayload {
     name: string;
     label: string;
     configured: boolean;
-    auth_type?: "api_key" | "oauth";
+    auth_type?: "api_key";
     api_key_required?: boolean;
     api_key_hint?: string | null;
     api_base?: string | null;
     default_api_base?: string | null;
     api_type?: "auto" | "chat_completions" | "responses";
-    oauth_account?: string | null;
-    oauth_expires_at?: number | null;
-    oauth_login_supported?: boolean;
   }>;
   web_search: {
     provider: string;
@@ -464,7 +461,7 @@ export interface McpPresetInfo {
   category: string;
   description: string;
   docs_url: string;
-  transport: "stdio" | "streamableHttp" | "sse" | "oauth" | string;
+  transport: "stdio" | "streamableHttp" | "sse" | string;
   requires: string;
   note: string;
   install_supported: boolean;
