@@ -10,7 +10,6 @@ from neonanobot.agent.memory import MemoryStore
 from neonanobot.agent.skills import SkillsLoader
 from neonanobot.agent.tools import mcp as mcp_tools
 from neonanobot.agent.tools.registry import ToolRegistry
-from neonanobot.apps.cli import utils as cli_app_utils
 from neonanobot.bus.events import InboundMessage
 from neonanobot.session.goal_state import goal_state_runtime_lines
 from neonanobot.utils.helpers import (
@@ -24,13 +23,12 @@ from neonanobot.utils.prompt_templates import render_template
 
 def session_extra(metadata: Mapping[str, Any] | None) -> dict[str, Any]:
     """Return persisted kwargs for turn-attached capabilities."""
-    return cli_app_utils.session_extra(metadata) | mcp_tools.session_extra(metadata)
+    return mcp_tools.session_extra(metadata)
 
 
 def runtime_lines(state: Any, msg: Any, workspace: Path, *, skip: bool = False) -> list[str]:
     """Return model-visible runtime annotations for turn-attached capabilities."""
     return [
-        *cli_app_utils.runtime_lines(msg, workspace, skip=skip),
         *mcp_tools.runtime_lines(
             msg,
             configured_server_names=set(state._mcp_servers),

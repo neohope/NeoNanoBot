@@ -11,7 +11,6 @@ from pydantic_settings import BaseSettings
 from neonanobot.cron.types import CronSchedule
 
 if TYPE_CHECKING:
-    from neonanobot.agent.tools.cli_apps import CliAppsToolConfig
     from neonanobot.agent.tools.self import MyToolConfig
     from neonanobot.agent.tools.shell import ExecToolConfig
     from neonanobot.agent.tools.web import WebToolsConfig
@@ -255,7 +254,6 @@ class ToolsConfig(Base):
 
     web: WebToolsConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.web", "WebToolsConfig"))
     exec: ExecToolConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.shell", "ExecToolConfig"))
-    cli_apps: CliAppsToolConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.cli_apps", "CliAppsToolConfig"))
     my: MyToolConfig = Field(default_factory=lambda: _lazy_default("neonanobot.agent.tools.self", "MyToolConfig"))
     restrict_to_workspace: bool = False  # policy intent: keep tool access inside workspace when possible
     webui_allow_local_service_access: bool = Field(
@@ -450,7 +448,6 @@ def _resolve_tool_config_refs() -> None:
     """
     import sys
 
-    from neonanobot.agent.tools.cli_apps import CliAppsToolConfig
     from neonanobot.agent.tools.self import MyToolConfig
     from neonanobot.agent.tools.shell import ExecToolConfig
     from neonanobot.agent.tools.web import WebFetchConfig, WebSearchConfig, WebToolsConfig
@@ -458,7 +455,6 @@ def _resolve_tool_config_refs() -> None:
     # Re-export into this module's namespace
     mod = sys.modules[__name__]
     mod.ExecToolConfig = ExecToolConfig  # type: ignore[attr-defined]
-    mod.CliAppsToolConfig = CliAppsToolConfig  # type: ignore[attr-defined]
     mod.WebToolsConfig = WebToolsConfig  # type: ignore[attr-defined]
     mod.WebSearchConfig = WebSearchConfig  # type: ignore[attr-defined]
     mod.WebFetchConfig = WebFetchConfig  # type: ignore[attr-defined]

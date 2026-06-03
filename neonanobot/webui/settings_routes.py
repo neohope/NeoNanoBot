@@ -17,7 +17,6 @@ from websockets.http11 import Response
 
 from neonanobot.agent.tools.mcp import request_mcp_reload
 from neonanobot.bus.queue import MessageBus
-from neonanobot.webui.cli_apps_api import cli_apps_action, cli_apps_payload
 from neonanobot.webui.mcp_presets_api import mcp_presets_settings_action
 from neonanobot.webui.settings_api import (
     WebUISettingsError,
@@ -90,16 +89,6 @@ class WebUISettingsRouter:
             return self._handle_settings_web_search_update(request)
         if path == "/api/settings/network-safety/update":
             return self._handle_settings_network_safety_update(request)
-        if path == "/api/settings/cli-apps":
-            return self._handle_settings_cli_apps(request)
-        if path == "/api/settings/cli-apps/install":
-            return await self._handle_settings_cli_apps_action(request, "install")
-        if path == "/api/settings/cli-apps/update":
-            return await self._handle_settings_cli_apps_action(request, "update")
-        if path == "/api/settings/cli-apps/uninstall":
-            return await self._handle_settings_cli_apps_action(request, "uninstall")
-        if path == "/api/settings/cli-apps/test":
-            return await self._handle_settings_cli_apps_action(request, "test")
         if path == "/api/settings/mcp-presets":
             return await self._handle_settings_mcp_presets(request)
         mcp_action = _MCP_PRESET_ACTIONS_BY_PATH.get(path)
@@ -240,35 +229,6 @@ class WebUISettingsRouter:
         except WebUISettingsError as e:
             return self._error_response(e.status, e.message)
         return self._json_response(self._with_restart_state(payload, section="runtime"))
-
-    def _handle_settings_cli_apps(self, request: WsRequest) -> Response:
-        if not self._authorized(request):
-            return self._unauthorized()
-        try:
-            payload = cli_apps_payload()
-        except Exception:
-            self.logger.exception("failed to load CLI Apps payload")
-            return self._error_response(500, "failed to load CLI Apps")
-        return self._json_response(payload)
-
-    async def _handle_settings_cli_apps_action(
-        self,
-        request: WsRequest,
-        action: str,
-    ) -> Response:
-        if not self._authorized(request):
-            return self._unauthorized()
-        try:
-            payload = await asyncio.to_thread(cli_apps_action, action, self._query(request))
-        except WebUISettingsError as e:
-            return self._error_response(e.status, e.message)
-        except Exception as e:
-            status = getattr(e, "status", 500)
-            message = getattr(e, "message", str(e))
-            if status >= 500:
-                self.logger.exception("CLI Apps action '{}' failed", action)
-            return self._error_response(status, message)
-        return self._json_response(payload)
 
     async def _handle_settings_mcp_presets(
         self,

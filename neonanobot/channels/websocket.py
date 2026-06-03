@@ -45,7 +45,6 @@ from neonanobot.utils.media_decode import (
 )
 from neonanobot.utils.subagent_channel_display import scrub_subagent_messages_for_channel
 from neonanobot.webui.settings_api import runtime_capabilities
-from neonanobot.webui.cli_apps_api import normalize_cli_app_mentions
 from neonanobot.webui.media_api import (
     serve_signed_media,
     sign_media_path,
@@ -1043,9 +1042,7 @@ class WebSocketChannel(BaseChannel):
             }
             if media:
                 user_obj["media_paths"] = list(media)
-            cli_apps = meta.get("cli_apps")
-            if isinstance(cli_apps, list) and cli_apps:
-                user_obj["cli_apps"] = cli_apps
+
             mcp_presets = meta.get("mcp_presets")
             if isinstance(mcp_presets, list) and mcp_presets:
                 user_obj["mcp_presets"] = mcp_presets
@@ -1558,9 +1555,7 @@ class WebSocketChannel(BaseChannel):
             metadata: dict[str, Any] = {"remote": getattr(connection, "remote_address", None)}
             if envelope.get("webui") is True:
                 metadata["webui"] = True
-            cli_apps = normalize_cli_app_mentions(envelope.get("cli_apps"))
-            if cli_apps:
-                metadata["cli_apps"] = cli_apps
+
             mcp_presets = normalize_mcp_preset_mentions(envelope.get("mcp_presets"))
             if mcp_presets:
                 metadata["mcp_presets"] = mcp_presets
