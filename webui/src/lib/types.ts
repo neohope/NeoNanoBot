@@ -51,8 +51,6 @@ export interface UIMessage {
   images?: UIImage[];
   /** Signed or local UI-renderable media attachments. */
   media?: UIMediaAttachment[];
-  /** App-specific CLI adapters explicitly attached to this user turn. */
-  cliApps?: UICliAppAttachment[];
   /** Settings-managed MCP presets explicitly attached to this user turn. */
   mcpPresets?: UIMcpPresetAttachment[];
   /** Assistant turn: accumulated model reasoning / thinking text. Built up
@@ -64,15 +62,6 @@ export interface UIMessage {
   reasoningStreaming?: boolean;
   /** End-to-end wall time for this assistant turn (persisted ``latency_ms`` / ``turn_end``). */
   latencyMs?: number;
-}
-
-export interface UICliAppAttachment {
-  name: string;
-  display_name?: string;
-  category?: string;
-  entry_point?: string;
-  logo_url?: string | null;
-  brand_color?: string | null;
 }
 
 export interface UIMcpPresetAttachment {
@@ -411,40 +400,6 @@ export interface AppManifest {
   trust: AppTrust;
 }
 
-export interface CliAppInfo {
-  name: string;
-  display_name: string;
-  category: string;
-  description: string;
-  requires: string;
-  source: string;
-  entry_point: string;
-  install_supported: boolean;
-  installed: boolean;
-  available: boolean;
-  status: "installed" | "missing" | "available" | "unsupported" | "not_installed" | string;
-  logo_url?: string | null;
-  brand_color?: string | null;
-  skill_installed: boolean;
-  manifest?: AppManifest;
-}
-
-export interface CliAppsPayload {
-  apps: CliAppInfo[];
-  installed_count: number;
-  catalog_updated_at?: string | null;
-  last_action?: {
-    ok: boolean;
-    message: string;
-    installed?: boolean;
-    removed?: boolean;
-    output?: string | null;
-    still_available?: boolean;
-    verification?: string[];
-    verification_failed?: string[];
-  };
-}
-
 export interface McpPresetField {
   name: string;
   label: string;
@@ -670,15 +625,6 @@ export interface OutboundMedia {
   name?: string;
 }
 
-export interface OutboundCliAppMention {
-  name: string;
-  display_name?: string;
-  category?: string;
-  entry_point?: string;
-  logo_url?: string | null;
-  brand_color?: string | null;
-}
-
 export interface OutboundMcpPresetMention {
   name: string;
   display_name?: string;
@@ -708,7 +654,6 @@ export type Outbound =
       chat_id: string;
       content: string;
       media?: OutboundMedia[];
-      cli_apps?: OutboundCliAppMention[];
       mcp_presets?: OutboundMcpPresetMention[];
       workspace_scope?: WorkspaceScopePayload;
       /** Marks messages sent by the embedded WebUI, without changing the

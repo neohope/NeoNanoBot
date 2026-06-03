@@ -7,12 +7,7 @@ import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
 import { useNanobotStream, type SendImage, type SendOptions } from "@/hooks/useNanobotStream";
 import { useSessionHistory } from "@/hooks/useSessions";
-import { fetchCliApps, fetchMcpPresets, fetchSettings, listSlashCommands } from "@/lib/api";
-import {
-  CLI_APPS_CHANGED_EVENT,
-  installedCliAppsFromPayload,
-  isCliAppsPayload,
-} from "@/lib/cli-app-events";
+import { fetchMcpPresets, fetchSettings, listSlashCommands } from "@/lib/api";
 import {
   MCP_PRESETS_CHANGED_EVENT,
   installedMcpPresetsFromPayload,
@@ -21,7 +16,6 @@ import {
 import { inferProviderFromModelName, providerDisplayLabel } from "@/lib/provider-brand";
 import type {
   ChatSummary,
-  CliAppInfo,
   McpPresetInfo,
   SettingsPayload,
   SlashCommand,
@@ -166,7 +160,6 @@ export function ThreadShell({
   const { client, modelName, token } = useClient();
   const [booting, setBooting] = useState(false);
   const [slashCommands, setSlashCommands] = useState<SlashCommand[]>([]);
-  const [cliApps, setCliApps] = useState<CliAppInfo[]>([]);
   const [mcpPresets, setMcpPresets] = useState<McpPresetInfo[]>([]);
   const [settings, setSettings] = useState<SettingsPayload | null>(settingsSnapshot);
   const [heroGreetingKey, setHeroGreetingKey] = useState(randomHeroGreetingKey);
@@ -372,15 +365,6 @@ export function ThreadShell({
     };
   }, [token]);
 
-  const refreshCliApps = useCallback(async () => {
-    try {
-      const payload = await fetchCliApps(token);
-      setCliApps(installedCliAppsFromPayload(payload));
-    } catch {
-      setCliApps([]);
-    }
-  }, [token]);
-
   const refreshMcpPresets = useCallback(async () => {
     try {
       const payload = await fetchMcpPresets(token);
@@ -389,41 +373,6 @@ export function ThreadShell({
       setMcpPresets([]);
     }
   }, [token]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const payload = await fetchCliApps(token);
-        if (!cancelled) setCliApps(installedCliAppsFromPayload(payload));
-      } catch {
-        if (!cancelled) setCliApps([]);
-      }
-    };
-    load();
-
-    const refreshOnFocus = () => {
-      if (document.visibilityState === "hidden") return;
-      void refreshCliApps();
-    };
-    window.addEventListener("focus", refreshOnFocus);
-    document.addEventListener("visibilitychange", refreshOnFocus);
-    const refreshOnCliAppsChanged = (event: Event) => {
-      const payload = (event as CustomEvent<unknown>).detail;
-      if (isCliAppsPayload(payload)) {
-        setCliApps(installedCliAppsFromPayload(payload));
-        return;
-      }
-      void refreshCliApps();
-    };
-    window.addEventListener(CLI_APPS_CHANGED_EVENT, refreshOnCliAppsChanged);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("focus", refreshOnFocus);
-      document.removeEventListener("visibilitychange", refreshOnFocus);
-      window.removeEventListener(CLI_APPS_CHANGED_EVENT, refreshOnCliAppsChanged);
-    };
-  }, [refreshCliApps, token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -505,7 +454,6 @@ export function ThreadShell({
           modelProviderLabel={modelBadge.providerLabel}
           variant={showHeroComposer ? "hero" : "thread"}
           slashCommands={slashCommands}
-          cliApps={cliApps}
           mcpPresets={mcpPresets}
           onStop={stop}
           runStartedAt={runStartedAt}
@@ -533,7 +481,6 @@ export function ThreadShell({
           modelProviderLabel={modelBadge.providerLabel}
           variant="hero"
           slashCommands={slashCommands}
-          cliApps={cliApps}
           mcpPresets={mcpPresets}
           runStartedAt={runStartedAt}
           goalState={goalState}
@@ -581,7 +528,6 @@ export function ThreadShell({
         scrollToBottomSignal={scrollToBottomSignal}
         conversationKey={historyKey}
         showScrollToBottomButton={!!session}
-        cliApps={cliApps}
         mcpPresets={mcpPresets}
       />
     </section>

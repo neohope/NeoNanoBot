@@ -11,7 +11,6 @@ import {
 import type { StreamError } from "@/lib/neonanobot-client";
 import type {
   InboundEvent,
-  OutboundCliAppMention,
   OutboundMcpPresetMention,
   OutboundMedia,
   GoalStateWsPayload,
@@ -363,7 +362,6 @@ export interface SendImage {
 }
 
 export interface SendOptions {
-  cliApps?: OutboundCliAppMention[];
   mcpPresets?: OutboundMcpPresetMention[];
   workspaceScope?: WorkspaceScopePayload | null;
 }
@@ -964,7 +962,6 @@ export function useNanobotStream(
             content,
             createdAt: Date.now(),
             ...(previews ? { images: previews } : {}),
-            ...(options?.cliApps?.length ? { cliApps: options.cliApps } : {}),
             ...(options?.mcpPresets?.length ? { mcpPresets: options.mcpPresets } : {}),
           },
         ];

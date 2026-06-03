@@ -170,9 +170,7 @@ function activityItemsForMessage(message: UIMessage): ActivityItem[] {
   }
   for (const event of message.toolEvents ?? []) {
     const name = String(event.name ?? "").toLowerCase();
-    if (name === "run_cli_app") {
-      items.push({ type: "cli", message });
-    } else if (name === "mcp") {
+    if (name === "mcp") {
       items.push({ type: "mcp", message });
     } else {
       items.push({ type: "tool", message });

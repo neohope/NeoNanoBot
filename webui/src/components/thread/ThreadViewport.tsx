@@ -14,7 +14,7 @@ import { ThreadMessages } from "@/components/thread/ThreadMessages";
 import { isAgentActivityMember } from "@/components/thread/AgentActivityCluster";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { CliAppInfo, McpPresetInfo, UIMessage } from "@/lib/types";
+import type { McpPresetInfo, UIMessage } from "@/lib/types";
 
 interface ThreadViewportProps {
   messages: UIMessage[];
@@ -24,7 +24,6 @@ interface ThreadViewportProps {
   scrollToBottomSignal?: number;
   conversationKey?: string | null;
   showScrollToBottomButton?: boolean;
-  cliApps?: CliAppInfo[];
   mcpPresets?: McpPresetInfo[];
 }
 
@@ -55,7 +54,6 @@ export function ThreadViewport({
   scrollToBottomSignal = 0,
   conversationKey = null,
   showScrollToBottomButton = true,
-  cliApps = [],
   mcpPresets = [],
 }: ThreadViewportProps) {
   const { t } = useTranslation();
@@ -253,7 +251,6 @@ export function ThreadViewport({
                   isStreaming={isStreaming}
                   hiddenMessageCount={hiddenMessageCount}
                   onLoadEarlier={loadEarlierMessages}
-                  cliApps={cliApps}
                   mcpPresets={mcpPresets}
                 />
               </div>

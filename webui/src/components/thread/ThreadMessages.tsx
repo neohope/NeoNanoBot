@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { MessageBubble } from "@/components/MessageBubble";
 import { AgentActivityCluster } from "@/components/thread/AgentActivityCluster";
 import { normalizeActivityTimeline, type TurnUnit } from "@/lib/activity-timeline";
-import type { CliAppInfo, McpPresetInfo, UIMessage } from "@/lib/types";
+import type { McpPresetInfo, UIMessage } from "@/lib/types";
 
 interface ThreadMessagesProps {
   messages: UIMessage[];
@@ -12,7 +12,6 @@ interface ThreadMessagesProps {
   isStreaming?: boolean;
   hiddenMessageCount?: number;
   onLoadEarlier?: () => void;
-  cliApps?: CliAppInfo[];
   mcpPresets?: McpPresetInfo[];
 }
 
@@ -59,7 +58,6 @@ export function ThreadMessages({
   isStreaming = false,
   hiddenMessageCount = 0,
   onLoadEarlier,
-  cliApps = [],
   mcpPresets = [],
 }: ThreadMessagesProps) {
   const { t } = useTranslation();
@@ -106,7 +104,6 @@ export function ThreadMessages({
                 isTurnStreaming={liveActivityClusterIndices.has(index)}
                 hasBodyBelow={hasBodyBelow}
                 turnLatencyMs={unit.turnLatencyMs}
-                cliApps={cliApps}
                 mcpPresets={mcpPresets}
               />
             ) : (
@@ -117,7 +114,6 @@ export function ThreadMessages({
                     ? copyFlags[index]
                     : true
                 }
-                cliApps={cliApps}
                 mcpPresets={mcpPresets}
               />
             )}

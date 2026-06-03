@@ -2,7 +2,6 @@ import type {
   ConnectionStatus,
   InboundEvent,
   Outbound,
-  OutboundCliAppMention,
   OutboundMcpPresetMention,
   OutboundMedia,
   GoalStateWsPayload,
@@ -331,7 +330,6 @@ export class NanobotClient {
     content: string,
     media?: OutboundMedia[],
     options?: {
-      cliApps?: OutboundCliAppMention[];
       mcpPresets?: OutboundMcpPresetMention[];
       workspaceScope?: WorkspaceScopePayload | null;
     },
@@ -342,7 +340,6 @@ export class NanobotClient {
       chat_id: chatId,
       content,
       ...(media && media.length > 0 ? { media } : {}),
-      ...(options?.cliApps?.length ? { cli_apps: options.cliApps } : {}),
       ...(options?.mcpPresets?.length ? { mcp_presets: options.mcpPresets } : {}),
       ...(options?.workspaceScope ? { workspace_scope: options.workspaceScope } : {}),
       webui: true,
