@@ -1259,7 +1259,6 @@ def _show_summary(config: Config) -> None:
     for title, model in [
         ("Agent Settings", config.agents.defaults),
         ("Channel Common", config.channels),
-        ("API Server", config.api),
         ("Gateway", config.gateway),
         ("Tools", config.tools),
     ]:
