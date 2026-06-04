@@ -1233,13 +1233,6 @@ export function ThreadComposer({
         ) : null}
         <RunElapsedStrip startedAt={runStartedAt} goalState={goalState} />
         <div className="relative">
-          {hasMentionDecorations ? (
-            <ComposerCliMentionOverlay
-              segments={mentionSegments}
-              isHero={isHero}
-              className={inputTextClasses}
-            />
-          ) : null}
           <textarea
             ref={textareaRef}
             value={value}
@@ -1259,7 +1252,7 @@ export function ThreadComposer({
               "relative z-10 caret-foreground placeholder:text-muted-foreground/70",
               "focus:outline-none focus-visible:outline-none",
               "disabled:cursor-not-allowed",
-              hasMentionDecorations && "text-transparent selection:bg-primary/20",
+              "text-transparent selection:bg-primary/20",
             )}
           />
         </div>
@@ -1617,26 +1610,6 @@ function ComposerModelBadge({
   );
 }
 
-function ComposerCliMentionOverlay({
-  segments,
-  isHero,
-  className,
-}: {
-  segments: CapabilityMentionSegment[];
-  isHero: boolean;
-  className: string;
-}) {
-  return (
-    <div
-      aria-hidden
-      className={cn(
-        className,
-        "pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words text-foreground",
-      )}
-    >
-    </div>
-  );
-}
 interface SlashCommandPaletteProps {
   commands: SlashPaletteCommand[];
   selectedIndex: number;
