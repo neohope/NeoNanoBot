@@ -50,7 +50,6 @@ from neonanobot.webui.media_api import (
     sign_media_path,
     sign_or_stage_media_path,
 )
-from neonanobot.webui.mcp_presets_api import normalize_mcp_preset_mentions
 from neonanobot.webui.settings_routes import WebUISettingsRouter
 from neonanobot.webui.sidebar_state import (
     read_webui_sidebar_state,
@@ -1043,9 +1042,6 @@ class WebSocketChannel(BaseChannel):
             if media:
                 user_obj["media_paths"] = list(media)
 
-            mcp_presets = meta.get("mcp_presets")
-            if isinstance(mcp_presets, list) and mcp_presets:
-                user_obj["mcp_presets"] = mcp_presets
             self._try_append_webui_transcript(chat_id, user_obj)
         await super()._handle_message(
             sender_id,
@@ -1556,9 +1552,6 @@ class WebSocketChannel(BaseChannel):
             if envelope.get("webui") is True:
                 metadata["webui"] = True
 
-            mcp_presets = normalize_mcp_preset_mentions(envelope.get("mcp_presets"))
-            if mcp_presets:
-                metadata["mcp_presets"] = mcp_presets
             metadata[WORKSPACE_SCOPE_METADATA_KEY] = scope.metadata()
             self._webui_workspaces.persist_scope(cid, scope)
             await self._handle_message(

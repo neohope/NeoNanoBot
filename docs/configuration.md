@@ -28,26 +28,6 @@ If a referenced variable is unset, neonanobot fails fast at startup with `ValueE
 
 ### More examples
 
-**MCP servers** — both stdio `env` and HTTP `headers`:
-
-```json
-{
-  "tools": {
-    "mcpServers": {
-      "github": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-github"],
-        "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}" }
-      },
-      "remote": {
-        "url": "https://example.com/mcp/",
-        "headers": { "Authorization": "Bearer ${REMOTE_MCP_TOKEN}" }
-      }
-    }
-  }
-}
-```
-
 **Web search providers:**
 
 ```json
@@ -587,83 +567,6 @@ If you want to always use the local conversion, you can force it using:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `useJinaReader` | boolean | `true` | If true, Jina Reader will be preferred over the local conversion |
-
-
-## MCP (Model Context Protocol)
-
-> [!TIP]
-> The config format is compatible with Claude Desktop / Cursor. You can copy MCP server configs directly from any MCP server's README.
-
-neonanobot supports [MCP](https://modelcontextprotocol.io/) — connect external tool servers and use them as native agent tools.
-
-Add MCP servers to your `config.json`:
-
-```json
-{
-  "tools": {
-    "mcpServers": {
-      "filesystem": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"]
-      },
-      "my-remote-mcp": {
-        "url": "https://example.com/mcp/",
-        "headers": {
-          "Authorization": "Bearer xxxxx"
-        }
-      }
-    }
-  }
-}
-```
-
-Two transport modes are supported:
-
-| Mode | Config | Example |
-|------|--------|---------|
-| **Stdio** | `command` + `args` | Local process via `npx` / `uvx` |
-| **HTTP** | `url` + `headers` (optional) | Remote endpoint (`https://mcp.example.com/sse`) |
-
-Use `toolTimeout` to override the default 30s per-call timeout for slow servers:
-
-```json
-{
-  "tools": {
-    "mcpServers": {
-      "my-slow-server": {
-        "url": "https://example.com/mcp/",
-        "toolTimeout": 120
-      }
-    }
-  }
-}
-```
-
-Use `enabledTools` to register only a subset of tools from an MCP server:
-
-```json
-{
-  "tools": {
-    "mcpServers": {
-      "filesystem": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"],
-        "enabledTools": ["read_file", "mcp_filesystem_write_file"]
-      }
-    }
-  }
-}
-```
-
-`enabledTools` accepts either the raw MCP tool name (for example `read_file`) or the wrapped neonanobot tool name (for example `mcp_filesystem_write_file`).
-
-- Omit `enabledTools`, or set it to `["*"]`, to register all tools.
-- Set `enabledTools` to `[]` to register no tools from that server.
-- Set `enabledTools` to a non-empty list of names to register only that subset.
-
-MCP tools are automatically discovered and registered on startup. The LLM can use them alongside built-in tools — no extra configuration needed.
-
-
 
 
 ## Security

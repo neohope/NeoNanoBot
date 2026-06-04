@@ -591,7 +591,6 @@ def settings_payload(
             "webui_default_access_mode": read_webui_default_access_mode(),
             "private_service_protection_enabled": True,
             "ssrf_whitelist_count": len(config.tools.ssrf_whitelist),
-            "mcp_server_count": len(config.tools.mcp_servers),
             "exec_enabled": exec_config.enable,
             "exec_sandbox": exec_config.sandbox or None,
             "exec_path_append_set": bool(exec_config.path_append),

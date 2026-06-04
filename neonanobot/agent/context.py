@@ -8,7 +8,6 @@ from typing import Any, Mapping, Sequence
 
 from neonanobot.agent.memory import MemoryStore
 from neonanobot.agent.skills import SkillsLoader
-from neonanobot.agent.tools import mcp as mcp_tools
 from neonanobot.agent.tools.registry import ToolRegistry
 from neonanobot.bus.events import InboundMessage
 from neonanobot.session.goal_state import goal_state_runtime_lines
@@ -19,31 +18,6 @@ from neonanobot.utils.helpers import (
     truncate_text,
 )
 from neonanobot.utils.prompt_templates import render_template
-
-
-def session_extra(metadata: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Return persisted kwargs for turn-attached capabilities."""
-    return mcp_tools.session_extra(metadata)
-
-
-def runtime_lines(state: Any, msg: Any, workspace: Path, *, skip: bool = False) -> list[str]:
-    """Return model-visible runtime annotations for turn-attached capabilities."""
-    return [
-        *mcp_tools.runtime_lines(
-            msg,
-            configured_server_names=set(state._mcp_servers),
-            connected_server_names=set(state._mcp_stacks),
-            skip=skip,
-        ),
-    ]
-
-
-async def connect_mcp(state: Any, tools: ToolRegistry) -> None:
-    await mcp_tools.connect_missing_servers(state, tools)
-
-
-async def handle_runtime_control(state: Any, msg: InboundMessage, tools: ToolRegistry) -> bool:
-    return await mcp_tools.handle_runtime_control(state, msg, tools)
 
 
 class ContextBuilder:

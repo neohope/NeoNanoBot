@@ -666,11 +666,6 @@ def replay_transcript_to_ui_messages(
                 row["media"] = media_att
                 if all(m.get("kind") == "image" for m in media_att):
                     row["images"] = [{"url": m.get("url"), "name": m.get("name")} for m in media_att]
-            mcp_presets = rec.get("mcp_presets")
-            if isinstance(mcp_presets, list) and mcp_presets:
-                row["mcpPresets"] = [
-                    dict(preset) for preset in mcp_presets if isinstance(preset, dict)
-                ]
             messages.append(row)
             continue
 

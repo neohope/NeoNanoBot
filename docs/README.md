@@ -13,7 +13,7 @@ Start here for setup, everyday usage, and deployment.
 | Install and quick start | [`quick-start.md`](./quick-start.md) | Installation, onboarding, and first-run setup |
 | Chat apps | [`chat-apps.md`](./chat-apps.md) | Connect neonanobot to Feishu and more |
 | Agent social network | [`agent-social-network.md`](./agent-social-network.md) | Join external agent communities from neonanobot |
-| Configuration | [`configuration.md`](./configuration.md) | Providers, tools, channels, MCP, and runtime settings |
+| Configuration | [`configuration.md`](./configuration.md) | Providers, tools, channels, and runtime settings |
 | WebUI | [`../webui/README.md`](../webui/README.md) | Open the bundled browser UI; LAN access; Vite dev server for contributors |
 | Multiple instances | [`multiple-instances.md`](./multiple-instances.md) | Run isolated bots with separate configs and workspaces |
 | CLI reference | [`cli-reference.md`](./cli-reference.md) | Core CLI commands and common entrypoints |

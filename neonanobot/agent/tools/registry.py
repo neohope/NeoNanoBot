@@ -48,8 +48,8 @@ class ToolRegistry:
     def get_definitions(self) -> list[dict[str, Any]]:
         """Get tool definitions with stable ordering for cache-friendly prompts.
 
-        Built-in tools are sorted first as a stable prefix, then MCP tools are
-        sorted and appended.  The result is cached until the next
+        Built-in tools are sorted first as a stable prefix. 
+        The result is cached until the next
         register/unregister call.
         """
         if self._cached_definitions is not None:
@@ -57,17 +57,12 @@ class ToolRegistry:
 
         definitions = [tool.to_schema() for tool in self._tools.values()]
         builtins: list[dict[str, Any]] = []
-        mcp_tools: list[dict[str, Any]] = []
         for schema in definitions:
             name = self._schema_name(schema)
-            if name.startswith("mcp_"):
-                mcp_tools.append(schema)
-            else:
-                builtins.append(schema)
+            builtins.append(schema)
 
         builtins.sort(key=self._schema_name)
-        mcp_tools.sort(key=self._schema_name)
-        self._cached_definitions = builtins + mcp_tools
+        self._cached_definitions = builtins
         return self._cached_definitions
 
     def prepare_call(

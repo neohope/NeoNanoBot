@@ -15,9 +15,7 @@ from typing import Any
 from websockets.http11 import Request as WsRequest
 from websockets.http11 import Response
 
-from neonanobot.agent.tools.mcp import request_mcp_reload
 from neonanobot.bus.queue import MessageBus
-from neonanobot.webui.mcp_presets_api import mcp_presets_settings_action
 from neonanobot.webui.settings_api import (
     WebUISettingsError,
     create_model_configuration,
@@ -32,19 +30,6 @@ from neonanobot.webui.settings_api import (
 )
 
 QueryParams = dict[str, list[str]]
-
-_MCP_VALUES_HEADER = "X-neonanobot-MCP-Values"
-_MCP_VALUES_HEADER_MAX_BYTES = 64 * 1024
-
-_MCP_PRESET_ACTIONS_BY_PATH = {
-    "/api/settings/mcp-presets/enable": "enable",
-    "/api/settings/mcp-presets/remove": "remove",
-    "/api/settings/mcp-presets/test": "test",
-    "/api/settings/mcp-presets/custom": "custom",
-    "/api/settings/mcp-presets/import": "import",
-    "/api/settings/mcp-presets/import-cursor": "import-cursor",
-    "/api/settings/mcp-presets/tools": "tools",
-}
 
 
 class WebUISettingsRouter:
@@ -89,11 +74,6 @@ class WebUISettingsRouter:
             return self._handle_settings_web_search_update(request)
         if path == "/api/settings/network-safety/update":
             return self._handle_settings_network_safety_update(request)
-        if path == "/api/settings/mcp-presets":
-            return await self._handle_settings_mcp_presets(request)
-        mcp_action = _MCP_PRESET_ACTIONS_BY_PATH.get(path)
-        if mcp_action is not None:
-            return await self._handle_settings_mcp_presets(request, mcp_action)
         return None
 
     def _query(self, request: WsRequest) -> QueryParams:
@@ -124,33 +104,6 @@ class WebUISettingsRouter:
             runtime_capability_overrides=self._runtime_capabilities,
             restart_required_sections=sections,
         )
-
-    def _parse_mcp_settings_query(self, request: WsRequest) -> QueryParams:
-        query = self._query(request)
-        raw = request.headers.get(_MCP_VALUES_HEADER)
-        if not raw:
-            return query
-        if len(raw.encode("utf-8")) > _MCP_VALUES_HEADER_MAX_BYTES:
-            raise WebUISettingsError("MCP settings payload is too large")
-        try:
-            payload = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise WebUISettingsError("invalid MCP settings payload") from exc
-        if not isinstance(payload, dict):
-            raise WebUISettingsError("MCP settings payload must be a JSON object")
-        merged = {key: list(values) for key, values in query.items()}
-        for key, value in payload.items():
-            if not isinstance(key, str) or not key:
-                raise WebUISettingsError("MCP settings payload contains an invalid key")
-            if value is None:
-                continue
-            if isinstance(value, str):
-                text = value.strip()
-            else:
-                text = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
-            if text:
-                merged[key] = [text]
-        return merged
 
     def _handle_settings(self, request: WsRequest) -> Response:
         if not self._authorized(request):
@@ -228,27 +181,4 @@ class WebUISettingsRouter:
             payload = update_network_safety_settings(self._query(request))
         except WebUISettingsError as e:
             return self._error_response(e.status, e.message)
-        return self._json_response(self._with_restart_state(payload, section="runtime"))
-
-    async def _handle_settings_mcp_presets(
-        self,
-        request: WsRequest,
-        action: str | None = None,
-    ) -> Response:
-        if not self._authorized(request):
-            return self._unauthorized()
-        try:
-            payload = await mcp_presets_settings_action(
-                action,
-                self._parse_mcp_settings_query(request),
-                reload_mcp=lambda: request_mcp_reload(self.bus),
-            )
-        except Exception as e:
-            status = getattr(e, "status", 500)
-            message = getattr(e, "message", str(e))
-            if status >= 500:
-                self.logger.exception("MCP preset action '{}' failed", action or "list")
-            return self._error_response(status, message)
-        if action is None:
-            return self._json_response(payload)
         return self._json_response(self._with_restart_state(payload, section="runtime"))

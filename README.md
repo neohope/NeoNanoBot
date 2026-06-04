@@ -1,7 +1,7 @@
 ## 简化版 nanobot
 Based on project: https://github.com/HKUDS/nanobot 
 
-🧑‍🌾 **neonanobot** is an open-source, ultra-lightweight agent runtime for people who want to own their AI agent stack. It gives you a small, readable core plus the practical pieces for real long-running agents: WebUI, chat channels, tools, memory, MCP, model routing, and deployment.
+🧑‍🌾 **neonanobot** is an open-source, ultra-lightweight agent runtime for people who want to own their AI agent stack. It gives you a small, readable core plus the practical pieces for real long-running agents: WebUI, chat channels, tools, memory, model routing, and deployment.
 
 
 ## Install
@@ -75,7 +75,7 @@ neonanobot agent
 ```
 
 
-- Want different LLM providers, web search, MCP, security settings, or more config options? See [Configuration](./docs/configuration.md)
+- Want different LLM providers, web search, security settings, or more config options? See [Configuration](./docs/configuration.md)
 - Want to run locally? Use [Ollama](./docs/configuration.md#ollama-local), and [others](./docs/configuration.md#local-providers).
 - Want to run neonanobot in chat apps like Feishu? See [Chat Apps](./docs/chat-apps.md)
 

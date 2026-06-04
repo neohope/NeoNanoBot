@@ -180,28 +180,6 @@ class Session:
                 )
                 content = f"{content}\n{breadcrumbs}" if content else breadcrumbs
 
-            mcp_presets = message.get("mcp_presets")
-            if (
-                role == "user"
-                and isinstance(mcp_presets, list)
-                and mcp_presets
-                and isinstance(content, str)
-            ):
-                mcp_lines: list[str] = []
-                for item in mcp_presets[:8]:
-                    if not isinstance(item, dict):
-                        continue
-                    name = str(item.get("name") or "").strip().lower()
-                    if not name:
-                        continue
-                    transport = str(item.get("transport") or "mcp").strip() or "mcp"
-                    mcp_lines.append(
-                        f"[MCP Preset Attachment: @{name}; tool_prefix=mcp_{name}_; "
-                        f"transport={transport}]"
-                    )
-                if mcp_lines:
-                    breadcrumbs = "\n".join(mcp_lines)
-                    content = f"{content}\n{breadcrumbs}" if content else breadcrumbs
             if include_timestamps:
                 content = self._annotate_message_time(message, content)
             if role == "assistant" and isinstance(content, str) and not content.strip():

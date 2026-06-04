@@ -185,7 +185,6 @@ class AgentLoop:
         cron_service: CronService | None = None,
         restrict_to_workspace: bool = False,
         session_manager: SessionManager | None = None,
-        mcp_servers: dict | None = None,
         channels_config: ChannelsConfig | None = None,
         timezone: str | None = None,
         session_ttl_minutes: int = 0,
@@ -277,10 +276,6 @@ class AgentLoop:
         self._unified_session = unified_session
         self._max_messages = max_messages if max_messages > 0 else 120
         self._running = False
-        self._mcp_servers = mcp_servers or {}
-        self._mcp_stacks: dict[str, AsyncExitStack] = {}
-        self._mcp_connected = False
-        self._mcp_connecting = False
         self._active_tasks: dict[str, list[asyncio.Task]] = {}  # session_key -> tasks
         self._background_tasks: list[asyncio.Task] = []
         self._session_locks: dict[str, asyncio.Lock] = {}
@@ -364,7 +359,6 @@ class AgentLoop:
             provider_retry_mode=defaults.provider_retry_mode,
             tool_hint_max_length=defaults.tool_hint_max_length,
             restrict_to_workspace=config.tools.restrict_to_workspace,
-            mcp_servers=config.tools.mcp_servers,
             channels_config=config.channels,
             timezone=defaults.timezone,
             unified_session=defaults.unified_session,
@@ -485,10 +479,6 @@ class AgentLoop:
             registered.append("my")
 
         logger.info("Registered {} tools: {}", len(registered), registered)
-
-    async def _connect_mcp(self) -> None:
-        """Connect configured MCP servers."""
-        await agent_context.connect_mcp(self, self.tools)
 
     def _set_tool_context(
         self, channel: str, chat_id: str,
@@ -820,10 +810,12 @@ class AgentLoop:
             logger.error("LLM returned error: {}", (result.final_content or "")[:200])
         return result.final_content, result.tools_used, result.messages, result.stop_reason, result.had_injections
 
+    # 正式开启Agent循环
+    # 获取msg
+    # 
     async def run(self) -> None:
         """Run the agent loop, dispatching messages as tasks to stay responsive to /stop."""
         self._running = True
-        await self._connect_mcp()
         logger.info("Agent loop started")
 
         while self._running:
@@ -897,6 +889,7 @@ class AgentLoop:
                 else None
             )
 
+    # 消息分发
     async def _dispatch(self, msg: InboundMessage) -> None:
         """Process a message: per-session serial, cross-session concurrent."""
         session_key = self._effective_session_key(msg)
@@ -1031,18 +1024,6 @@ class AgentLoop:
                 self._pending_turn_latency_ms.pop(session_key, None)
                 self._webui_turns.discard(session_key)
 
-    async def close_mcp(self) -> None:
-        """Drain pending background archives, then close MCP connections."""
-        if self._background_tasks:
-            await asyncio.gather(*self._background_tasks, return_exceptions=True)
-            self._background_tasks.clear()
-        for name, stack in self._mcp_stacks.items():
-            try:
-                await stack.aclose()
-            except (RuntimeError, BaseExceptionGroup):
-                logger.debug("MCP server '{}' cleanup error (can be ignored)", name)
-        self._mcp_stacks.clear()
-
     def _schedule_background(self, coro) -> None:
         """Schedule a coroutine as a tracked background task (drained on shutdown)."""
         task = asyncio.create_task(coro)
@@ -1147,6 +1128,7 @@ class AgentLoop:
             metadata=outbound_metadata,
         )
 
+    # 处理消息
     async def _process_message(
         self,
         msg: InboundMessage,
@@ -1689,7 +1671,6 @@ class AgentLoop:
         on_stream_end: Callable[..., Awaitable[None]] | None = None,
     ) -> OutboundMessage | None:
         """Process a message directly and return the outbound payload."""
-        await self._connect_mcp()
         msg = InboundMessage(
             channel=channel, sender_id="user", chat_id=chat_id,
             content=content, media=media or [],

@@ -692,22 +692,15 @@ def serve(
 
     api_app = create_app(agent_loop, model_name=model_name, request_timeout=timeout)
 
-    async def on_startup(_app):
-        await agent_loop._connect_mcp()
-
-    async def on_cleanup(_app):
-        await agent_loop.close_mcp()
-
-    api_app.on_startup.append(on_startup)
-    api_app.on_cleanup.append(on_cleanup)
-
     web.run_app(api_app, host=host, port=port, print=lambda msg: logger.info(msg))
 
 
 # ============================================================================
 # Gateway / Server
 # ============================================================================
-
+# 命令行执行> neonanobot gateway
+# 执行 gateway -> _run_gateway
+# 执行 
 
 @app.command()
 def gateway(
@@ -905,6 +898,7 @@ def _run_gateway(
     cron_store_path = config.workspace_path / "cron" / "jobs.json"
     cron = CronService(cron_store_path)
 
+    # 创建agent
     # Create agent with cron service
     agent = AgentLoop.from_config(
         config, bus,
@@ -1245,6 +1239,7 @@ def _run_gateway(
         except Exception as e:
             console.print(f"[yellow]Could not open browser ({e}); visit {open_browser_url}[/yellow]")
 
+    # 启动agent
     async def run():
         try:
             await cron.start()
@@ -1265,7 +1260,6 @@ def _run_gateway(
             console.print("\n[red]Error: Gateway crashed unexpectedly[/red]")
             console.print(traceback.format_exc())
         finally:
-            await agent.close_mcp()
             cron.stop()
             agent.stop()
             await channels.stop_all()
@@ -1388,7 +1382,6 @@ def agent(
                     metadata=response.metadata if response else None,
                     **print_kwargs,
                 )
-            await agent_loop.close_mcp()
 
         asyncio.run(run_once())
     else:
@@ -1537,7 +1530,6 @@ def agent(
                 agent_loop.stop()
                 outbound_task.cancel()
                 await asyncio.gather(bus_task, outbound_task, return_exceptions=True)
-                await agent_loop.close_mcp()
 
         asyncio.run(run_interactive())
 

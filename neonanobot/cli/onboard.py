@@ -1155,7 +1155,7 @@ _SETTINGS_SECTIONS: dict[str, tuple[str, str, set[str] | None]] = {
     "Channel Common": ("Channel Common", "Configure cross-channel behavior: progress, tool hints, retries", None),
     "API Server": ("API Server", "Configure OpenAI-compatible API endpoint", None),
     "Gateway": ("Gateway Settings", "Configure server host, port", None),
-    "Tools": ("Tools Settings", "Configure web search, shell exec, and other tools", {"mcp_servers"}),
+    "Tools": ("Tools Settings", "Configure web search, shell exec, and other tools"),
 }
 
 _SETTINGS_GETTER = {
