@@ -35,6 +35,6 @@ Skill discovery — flag [SKILL] when ALL of these are true:
 - It is substantial enough to warrant its own instruction set (not trivial like "read a file")
 - Do not worry about duplicates — the next phase will check against existing skills
 
-Do not add: current weather, transient status, temporary errors, conversational filler.
+Do not add: transient status, temporary errors, conversational filler.
 
 [SKIP] if nothing needs updating.

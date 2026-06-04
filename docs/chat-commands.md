@@ -63,7 +63,6 @@ The gateway wakes up every 30 minutes and checks `HEARTBEAT.md` in your workspac
 ```markdown
 ## Active Tasks
 
-- [ ] Check weather forecast and send a summary
 - [ ] Scan inbox for urgent emails
 ```
 

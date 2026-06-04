@@ -762,7 +762,7 @@ neonanobot ships with built-in skills, and your workspace can also define custom
 {
   "agents": {
     "defaults": {
-      "disabledSkills": ["github", "weather"]
+      "disabledSkills": ["github"]
     }
   }
 }

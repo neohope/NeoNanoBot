@@ -21,7 +21,7 @@ _CRON_PARAMETERS = tool_parameters_schema(
     action=StringSchema("Action to perform", enum=["add", "list", "remove"]),
     name=StringSchema(
         "Optional short human-readable label for the job "
-        "(e.g., 'weather-monitor', 'daily-standup'). Defaults to first 30 chars of message."
+        "(e.g., 'daily-standup'). Defaults to first 30 chars of message."
     ),
     message=StringSchema(
         "REQUIRED when action='add'. Instruction for the agent to execute when the job triggers "
