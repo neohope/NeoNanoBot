@@ -44,7 +44,6 @@ Messages flow through an async `MessageBus` (`neonanobot/bus/queue.py`) that dec
 - **Session Management** (`neonanobot/session/`): Per-session history, context compaction, TTL-based auto-compaction (`manager.py`), and sustained goal state tracking (`goal_state.py`).
 - **Config** (`neonanobot/config/schema.py`, `loader.py`): Pydantic-based configuration loaded from `~/.neonanobot/config.json`. Supports camelCase aliases for JSON compatibility.
 - **WebUI** (`webui/`): Vite-based React SPA that talks to the gateway over a WebSocket multiplex protocol. The dev server proxies `/api`, `/webui`, `/auth`, and WebSocket traffic to the gateway.
-- **API Server** (`neonanobot/api/server.py`): OpenAI-compatible HTTP API (`/v1/chat/completions`, `/v1/models`) for programmatic access.
 - **Command Router** (`neonanobot/command/`): Slash command routing and built-in command handlers.
 - **Heartbeat** (`neonanobot/templates/HEARTBEAT.md`): Periodic task list checked via `cron` jobs (legacy dedicated service removed).
 - **Pairing** (`neonanobot/pairing/`): DM sender approval store with persistent pairing codes per channel.

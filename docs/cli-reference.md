@@ -11,7 +11,6 @@
 | `neonanobot agent` | Interactive chat mode |
 | `neonanobot agent --no-markdown` | Show plain-text replies |
 | `neonanobot agent --logs` | Show runtime logs during chat |
-| `neonanobot serve` | Start the OpenAI-compatible API |
 | `neonanobot gateway` | Start the gateway |
 | `neonanobot status` | Show status |
 | `neonanobot channels login <channel>` | Authenticate a channel interactively |
