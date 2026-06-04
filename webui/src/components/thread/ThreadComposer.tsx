@@ -11,10 +11,7 @@ import {
 
 import { MarkdownText, preloadMarkdownText } from "@/components/MarkdownText";
 import {
-  CliAppMentionToken,
   McpPresetMentionToken,
-  cliAppInitials,
-  mcpPresetInitials,
   splitCapabilityMentionSegments,
   type CapabilityMentionSegment,
 } from "@/components/CliAppMentionText";
@@ -60,10 +57,8 @@ import {
 import { useClipboardAndDrop } from "@/hooks/useClipboardAndDrop";
 import type { SendImage, SendOptions } from "@/hooks/useNanobotStream";
 import type {
-  CliAppInfo,
   GoalStateWsPayload,
   McpPresetInfo,
-  OutboundCliAppMention,
   OutboundMcpPresetMention,
   SlashCommand,
   WorkspaceScopePayload,
@@ -71,7 +66,6 @@ import type {
 } from "@/lib/types";
 import {
   inferProviderFromModelName,
-  logoFallbackUrls,
   providerBrand,
 } from "@/lib/provider-brand";
 import { cn } from "@/lib/utils";
@@ -96,7 +90,6 @@ interface ThreadComposerProps {
   modelProviderLabel?: string | null;
   variant?: "thread" | "hero";
   slashCommands?: SlashCommand[];
-  cliApps?: CliAppInfo[];
   mcpPresets?: McpPresetInfo[];
   onStop?: () => void;
   /** Unix seconds from server; turn elapsed timer above input while set. */
@@ -153,16 +146,6 @@ interface QueuedPromptImage {
   dataUrl: string;
   name?: string;
 }
-
-interface CliAppMentionQuery {
-  query: string;
-  start: number;
-  end: number;
-}
-
-type MentionCandidate =
-  | { kind: "cli"; name: string; app: CliAppInfo }
-  | { kind: "mcp"; name: string; preset: McpPresetInfo };
 
 interface SlashPaletteCommand extends SlashCommand {
   detail: string;
@@ -367,17 +350,6 @@ function buildGoalMarkdownBody(summary: string, objective: string): string {
   const o = objective.trim();
   if (s && o) return `${s}\n\n---\n\n${o}`;
   return o || s;
-}
-
-function cliAppMentionPayload(app: CliAppInfo): OutboundCliAppMention {
-  return {
-    name: app.name,
-    display_name: app.display_name,
-    category: app.category,
-    entry_point: app.entry_point,
-    logo_url: app.logo_url ?? null,
-    brand_color: app.brand_color ?? null,
-  };
 }
 
 function mcpPresetMentionPayload(preset: McpPresetInfo): OutboundMcpPresetMention {
@@ -649,7 +621,6 @@ export function ThreadComposer({
   modelProviderLabel = null,
   variant = "thread",
   slashCommands = [],
-  cliApps = [],
   mcpPresets = [],
   onStop,
   runStartedAt = null,
@@ -667,9 +638,6 @@ export function ThreadComposer({
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [slashMenuDismissed, setSlashMenuDismissed] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
-  const [cliAppMenuDismissed, setCliAppMenuDismissed] = useState(false);
-  const [selectedCliAppIndex, setSelectedCliAppIndex] = useState(0);
-  const [cursorPosition, setCursorPosition] = useState(0);
   const [recentSlashCommands, setRecentSlashCommands] = useState<string[]>(() => readSlashRecents());
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -862,68 +830,14 @@ export function ThreadComposer({
   }, [goalState?.active, isStreaming, modelLabel, recentSlashCommands, slashQuery, t, visibleSlashCommands]);
 
   const showSlashMenu = filteredSlashCommands.length > 0;
-  const cliAppMention = useMemo<CliAppMentionQuery | null>(() => {
-    if (disabled || cliAppMenuDismissed) return null;
-    const caret = Math.min(Math.max(cursorPosition, 0), value.length);
-    const beforeCaret = value.slice(0, caret);
-    const match = /(?:^|\s)@([a-z0-9_-]*)$/i.exec(beforeCaret);
-    if (!match) return null;
-    const query = match[1].toLowerCase();
-    return {
-      query,
-      start: caret - query.length - 1,
-      end: caret,
-    };
-  }, [cliAppMenuDismissed, cursorPosition, disabled, value]);
-
-  const filteredMentionCandidates = useMemo<MentionCandidate[]>(() => {
-    if (!cliAppMention) return [];
-    const cliCandidates: MentionCandidate[] = cliApps
-      .filter((app) => app.installed)
-      .filter((app) => {
-        const haystack = [
-          app.name,
-          app.display_name,
-          app.category,
-          app.description,
-          app.entry_point,
-        ].join(" ").toLowerCase();
-        return haystack.includes(cliAppMention.query);
-      })
-      .map((app) => ({ kind: "cli", name: app.name, app }));
-    const mcpCandidates: MentionCandidate[] = mcpPresets
-      .filter((preset) => preset.installed && preset.configured)
-      .filter((preset) => {
-        const haystack = [
-          preset.name,
-          preset.display_name,
-          preset.category,
-          preset.description,
-          preset.transport,
-        ].join(" ").toLowerCase();
-        return haystack.includes(cliAppMention.query);
-      })
-      .map((preset) => ({ kind: "mcp", name: preset.name, preset }));
-    return [...cliCandidates, ...mcpCandidates].slice(0, 8);
-  }, [cliAppMention, cliApps, mcpPresets]);
-
-  const showCliAppMenu = filteredMentionCandidates.length > 0;
-  const showAnyPalette = showSlashMenu || showCliAppMenu;
+  const showAnyPalette = showSlashMenu;
   const mentionSegments = useMemo(
-    () => splitCapabilityMentionSegments(value, cliApps, mcpPresets),
-    [cliApps, mcpPresets, value],
+    () => splitCapabilityMentionSegments(value, mcpPresets),
+    [mcpPresets, value],
   );
   const hasMentionDecorations = mentionSegments.some(
-    (segment) => segment.kind === "cli" || segment.kind === "mcp",
+    (segment) => segment.kind === "mcp",
   );
-  const activeCliMentionApps = useMemo(() => {
-    const seen = new Set<string>();
-    return mentionSegments.flatMap((segment) => {
-      if (segment.kind !== "cli" || seen.has(segment.app.name)) return [];
-      seen.add(segment.app.name);
-      return [segment.app];
-    });
-  }, [mentionSegments]);
   const activeMcpPresetMentions = useMemo(() => {
     const seen = new Set<string>();
     return mentionSegments.flatMap((segment) => {
@@ -942,20 +856,10 @@ export function ThreadComposer({
   }, [slashQuery]);
 
   useEffect(() => {
-    setSelectedCliAppIndex(0);
-  }, [cliAppMention?.query]);
-
-  useEffect(() => {
     if (selectedCommandIndex >= filteredSlashCommands.length) {
       setSelectedCommandIndex(0);
     }
   }, [filteredSlashCommands.length, selectedCommandIndex]);
-
-  useEffect(() => {
-    if (selectedCliAppIndex >= filteredMentionCandidates.length) {
-      setSelectedCliAppIndex(0);
-    }
-  }, [filteredMentionCandidates.length, selectedCliAppIndex]);
 
   useEffect(() => {
     if (!showAnyPalette) return;
@@ -964,7 +868,6 @@ export function ThreadComposer({
       const target = event.target;
       if (target instanceof Node && formRef.current?.contains(target)) return;
       setSlashMenuDismissed(true);
-      setCliAppMenuDismissed(true);
     };
 
     document.addEventListener("pointerdown", dismissOnPointerDown, true);
@@ -1006,7 +909,7 @@ export function ThreadComposer({
       window.removeEventListener("resize", updateLayout);
       document.removeEventListener("scroll", updateLayout, true);
     };
-  }, [filteredMentionCandidates.length, filteredSlashCommands.length, showAnyPalette]);
+  }, [filteredSlashCommands.length, showAnyPalette]);
 
   const resizeTextarea = useCallback(() => {
     requestAnimationFrame(() => {
@@ -1024,7 +927,6 @@ export function ThreadComposer({
         onStop();
         setValue("");
         setSlashMenuDismissed(true);
-        setCliAppMenuDismissed(false);
         setInlineError(null);
         resizeTextarea();
         return;
@@ -1039,42 +941,16 @@ export function ThreadComposer({
 
       setValue(command.argHint ? `${command.command} ` : command.command);
       setSlashMenuDismissed(true);
-      setCliAppMenuDismissed(false);
       setInlineError(null);
       resizeTextarea();
     },
     [isStreaming, onStop, recentSlashCommands, resizeTextarea],
   );
 
-  const chooseMentionCandidate = useCallback(
-    (candidate: MentionCandidate) => {
-      if (!cliAppMention) return;
-      const suffix = value.slice(cliAppMention.end);
-      const mention = `@${candidate.name}${suffix.startsWith(" ") ? "" : " "}`;
-      const next = `${value.slice(0, cliAppMention.start)}${mention}${suffix}`;
-      const nextCursor = cliAppMention.start + mention.length;
-      setValue(next);
-      setCursorPosition(nextCursor);
-      setCliAppMenuDismissed(true);
-      setSlashMenuDismissed(false);
-      setInlineError(null);
-      resizeTextarea();
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (!el) return;
-        el.focus();
-        el.setSelectionRange(nextCursor, nextCursor);
-      });
-    },
-    [cliAppMention, resizeTextarea, value],
-  );
-
   const clearComposerText = useCallback(() => {
     setValue("");
     setInlineError(null);
     setSlashMenuDismissed(false);
-    setCliAppMenuDismissed(false);
-    setCursorPosition(0);
     resizeTextarea();
   }, [resizeTextarea]);
 
@@ -1105,8 +981,6 @@ export function ThreadComposer({
     setValue(prompt.text);
     setInlineError(null);
     setSlashMenuDismissed(false);
-    setCliAppMenuDismissed(false);
-    setCursorPosition(prompt.text.length);
     if (prompt.images?.length) {
       restoreReadyImages(prompt.images as RestoredReadyImage[]);
     } else {
@@ -1198,12 +1072,10 @@ export function ThreadComposer({
             preview: { url: img.dataUrl, name: img.file.name },
           }))
         : undefined;
-    const attachedCliApps = activeCliMentionApps.map(cliAppMentionPayload);
     const attachedMcpPresets = activeMcpPresetMentions.map(mcpPresetMentionPayload);
     const options: SendOptions | undefined =
-      attachedCliApps.length > 0 || attachedMcpPresets.length > 0
+      attachedMcpPresets.length > 0
         ? {
-            ...(attachedCliApps.length > 0 ? { cliApps: attachedCliApps } : {}),
             ...(attachedMcpPresets.length > 0 ? { mcpPresets: attachedMcpPresets } : {}),
           }
         : undefined;
@@ -1214,7 +1086,6 @@ export function ThreadComposer({
     clear();
     clearComposerText();
   }, [
-    activeCliMentionApps,
     activeMcpPresetMentions,
     canSend,
     clear,
@@ -1225,30 +1096,6 @@ export function ThreadComposer({
   ]);
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-    if (showCliAppMenu) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedCliAppIndex((idx) => (idx + 1) % filteredMentionCandidates.length);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedCliAppIndex(
-          (idx) => (idx - 1 + filteredMentionCandidates.length) % filteredMentionCandidates.length,
-        );
-        return;
-      }
-      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
-        e.preventDefault();
-        chooseMentionCandidate(filteredMentionCandidates[selectedCliAppIndex]);
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setCliAppMenuDismissed(true);
-        return;
-      }
-    }
     if (showSlashMenu) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -1362,16 +1209,6 @@ export function ThreadComposer({
           onChoose={chooseSlashCommand}
         />
       ) : null}
-      {showCliAppMenu ? (
-        <CliAppMentionPalette
-          candidates={filteredMentionCandidates}
-          selectedIndex={selectedCliAppIndex}
-          layout={slashPaletteLayout}
-          isHero={isHero}
-          onHover={setSelectedCliAppIndex}
-          onChoose={chooseMentionCandidate}
-        />
-      ) : null}
       <div
         className={cn(
           "group/composer relative mx-auto flex w-full flex-col overflow-visible transition-all duration-200",
@@ -1453,14 +1290,9 @@ export function ThreadComposer({
             onChange={(e) => {
               setValue(e.target.value);
               setSlashMenuDismissed(false);
-              setCliAppMenuDismissed(false);
-              setCursorPosition(e.target.selectionStart ?? e.target.value.length);
             }}
             onInput={onInput}
             onKeyDown={onKeyDown}
-            onKeyUp={(e) => setCursorPosition(e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
-            onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
-            onClick={(e) => setCursorPosition(e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
             onPaste={onPaste}
             rows={1}
             placeholder={resolvedPlaceholder}
@@ -1850,15 +1682,6 @@ function ComposerCliMentionOverlay({
         if (segment.kind === "text") {
           return <span key={`text-${index}`}>{segment.text}</span>;
         }
-        if (segment.kind === "cli") return (
-          <CliAppMentionToken
-            key={`cli-${segment.app.name}-${index}`}
-            app={segment.app}
-            label={segment.text}
-            variant="composer"
-            isHero={isHero}
-          />
-        );
         return (
           <McpPresetMentionToken
             key={`mcp-${segment.preset.name}-${index}`}
@@ -1881,15 +1704,6 @@ interface SlashCommandPaletteProps {
   onChoose: (command: SlashPaletteCommand) => void;
 }
 
-interface CliAppMentionPaletteProps {
-  candidates: MentionCandidate[];
-  selectedIndex: number;
-  layout: SlashPaletteLayout;
-  isHero: boolean;
-  onHover: (index: number) => void;
-  onChoose: (candidate: MentionCandidate) => void;
-}
-
 function useSelectedOptionScroll(selectedIndex: number) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -1905,142 +1719,6 @@ function useSelectedOptionScroll(selectedIndex: number) {
   }, [selectedIndex]);
 
   return containerRef;
-}
-
-function CliAppMentionPalette({
-  candidates,
-  selectedIndex,
-  layout,
-  isHero,
-  onHover,
-  onChoose,
-}: CliAppMentionPaletteProps) {
-  const { t } = useTranslation();
-  const listMaxHeight = Math.max(
-    0,
-    layout.maxHeight - SLASH_PALETTE_CHROME_PX,
-  );
-  const listRef = useSelectedOptionScroll(selectedIndex);
-  return (
-    <div
-      role="listbox"
-      aria-label={t("thread.composer.mentions.ariaLabel")}
-      style={{ maxHeight: layout.maxHeight }}
-      className={cn(
-        "absolute left-1/2 z-30 w-[calc(100%-0.5rem)] -translate-x-1/2 overflow-hidden rounded-[22px] border",
-        layout.placement === "above" ? "bottom-full mb-2" : "top-full mt-2",
-        "border-border/70 bg-popover p-2 text-popover-foreground shadow-[0_20px_60px_rgba(15,23,42,0.12)]",
-        "dark:border-white/10 dark:shadow-[0_24px_60px_rgba(0,0,0,0.42)]",
-        isHero ? "max-w-[58rem]" : "max-w-[49.5rem]",
-      )}
-    >
-      <div className="px-2 pb-1.5 pt-0.5 text-[13px] font-semibold text-muted-foreground/78">
-        {t("thread.composer.mentions.label")}
-      </div>
-      <div ref={listRef} className="overflow-y-auto" style={{ maxHeight: listMaxHeight }}>
-        {candidates.map((candidate, index) => {
-          const selected = index === selectedIndex;
-          const name = candidate.name;
-          const displayName = candidate.kind === "cli"
-            ? candidate.app.display_name
-            : candidate.preset.display_name;
-          const typeLabel = candidate.kind === "cli"
-            ? t("thread.composer.mentions.cliBadge")
-            : t("thread.composer.mentions.mcpBadge");
-          const ariaDescription = candidate.kind === "cli"
-            ? t("thread.composer.mentions.cliDescription", { name })
-            : t("thread.composer.mentions.mcpDescription", { name });
-          return (
-            <button
-              key={`${candidate.kind}-${name}`}
-              type="button"
-              role="option"
-              data-palette-index={index}
-              aria-selected={selected}
-              aria-label={`${displayName} @${name} ${ariaDescription} ${typeLabel}`}
-              onMouseEnter={() => onHover(index)}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onChoose(candidate);
-              }}
-              className={cn(
-                "flex h-10 w-full items-center gap-2.5 rounded-[13px] px-2.5 text-left transition-colors",
-                selected
-                  ? "bg-foreground/[0.055] text-foreground"
-                  : "text-foreground/90 hover:bg-foreground/[0.04]",
-              )}
-            >
-              <MentionCandidateLogo candidate={candidate} selected={selected} />
-              <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                <span className="shrink-0 text-[15px] font-medium tracking-normal text-foreground">
-                  {displayName}
-                </span>
-                <span className="truncate text-[15px] font-normal tracking-normal text-muted-foreground/72">
-                  @{name}
-                </span>
-              </span>
-              <span
-                className={cn(
-                  "ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-normal",
-                  candidate.kind === "cli"
-                    ? "bg-orange-500/10 text-orange-600 dark:text-orange-300"
-                    : "bg-sky-500/10 text-sky-600 dark:text-sky-300",
-                )}
-              >
-                {typeLabel}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function MentionCandidateLogo({
-  candidate,
-  selected,
-}: {
-  candidate: MentionCandidate;
-  selected: boolean;
-}) {
-  const [logoIndex, setLogoIndex] = useState(0);
-  const color = (candidate.kind === "cli"
-    ? candidate.app.brand_color
-    : candidate.preset.brand_color) || "hsl(var(--primary))";
-  const rawLogoUrl = candidate.kind === "cli" ? candidate.app.logo_url : candidate.preset.logo_url;
-  const logoUrls = useMemo(() => logoFallbackUrls(rawLogoUrl), [rawLogoUrl]);
-  const logoUrl = logoUrls[logoIndex];
-
-  useEffect(() => setLogoIndex(0), [rawLogoUrl]);
-
-  if (logoUrl) {
-    return (
-      <span
-        className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-[5px]",
-          selected ? "bg-background/55" : "bg-transparent",
-        )}
-      >
-        <img
-          src={logoUrl}
-          alt=""
-          className="h-5 w-5 object-contain"
-          onError={() => setLogoIndex((index) => index + 1)}
-        />
-      </span>
-    );
-  }
-  return (
-    <span
-      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] text-[7.5px] font-semibold text-white"
-      style={{ backgroundColor: color }}
-    >
-      {candidate.kind === "cli"
-        ? cliAppInitials(candidate.app)
-        : mcpPresetInitials(candidate.preset)}
-    </span>
-  );
 }
 
 function SlashCommandPalette({

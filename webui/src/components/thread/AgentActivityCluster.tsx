@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { cliAppInitials, mcpPresetInitials } from "@/components/CliAppMentionText";
+import { mcpPresetInitials } from "@/components/CliAppMentionText";
 import { FileReferenceChip } from "@/components/FileReferenceChip";
 import { StreamingLabelSheen } from "@/components/MessageBubble";
 import { ActivityEvidencePreview } from "@/components/thread/activity/ActivityEvidencePreview";
@@ -32,7 +32,7 @@ import {
 import { faviconUrls, logoFallbackUrls } from "@/lib/provider-brand";
 import { formatToolCallTrace } from "@/lib/tool-traces";
 import { cn } from "@/lib/utils";
-import type { CliAppInfo, McpPresetInfo, ToolProgressEvent, UIFileEdit, UIMessage } from "@/lib/types";
+import type { McpPresetInfo, ToolProgressEvent, UIFileEdit, UIMessage } from "@/lib/types";
 
 /** Scrollport height for the Cursor-style “live trace” strip (tailwind spacing). */
 const CLUSTER_SCROLL_MAX_CLASS = "max-h-52";
@@ -43,7 +43,6 @@ export { isAgentActivityMember, isReasoningOnlyAssistant };
 interface ActivityCounts {
   reasoningSteps: number;
   toolCalls: number;
-  cliCount: number;
   mcpCount: number;
   fileCount: number;
   added: number;
@@ -59,16 +58,6 @@ interface ActivityCounts {
   primaryMcpName?: string;
   primaryMcpDisplayName?: string;
   primaryMcpStatus?: McpRunStatus;
-}
-
-interface CliRunSummary {
-  key: string;
-  name: string;
-  args: string[];
-  json: boolean;
-  workingDir?: string;
-  status: CliRunStatus;
-  error?: string;
 }
 
 type CliRunStatus = "running" | "done" | "error";
@@ -87,16 +76,11 @@ interface McpRunSummary {
 function countActivity(
   messages: UIMessage[],
   fileEdits: FileEditSummary[],
-  cliRuns: CliRunSummary[],
   mcpRuns: McpRunSummary[],
 ): ActivityCounts {
   let reasoningSteps = 0;
   let toolCalls = 0;
-  const cliCount = cliRuns.length;
   const mcpCount = mcpRuns.length;
-  const primaryCli = cliRuns[cliRuns.length - 1];
-  const primaryCliName = primaryCli?.name;
-  const primaryCliStatus = primaryCli?.status;
   const primaryMcp = mcpRuns[mcpRuns.length - 1];
   for (const m of messages) {
     if (isReasoningOnlyAssistant(m)) {
@@ -106,7 +90,7 @@ function countActivity(
     if (m.kind === "trace") {
       const lines = traceLines(m);
       for (const line of lines) {
-        if (!isCliRunTraceLine(line) && !isMcpRunTraceLine(line)) {
+        if (!isMcpRunTraceLine(line)) {
           toolCalls += 1;
         }
       }
@@ -145,7 +129,6 @@ function countActivity(
   return {
     reasoningSteps,
     toolCalls,
-    cliCount,
     mcpCount,
     fileCount: fileEdits.length,
     added,
@@ -156,8 +139,6 @@ function countActivity(
     hasDeletedFiles: fileEdits.length > 0 && deletedFileCount === fileEdits.length,
     primaryFilePath,
     primaryFileTooltipPath,
-    primaryCliName,
-    primaryCliStatus,
     primaryMcpName: primaryMcp?.presetName,
     primaryMcpDisplayName: primaryMcp?.displayName,
     primaryMcpStatus: primaryMcp?.status,
@@ -171,7 +152,6 @@ interface AgentActivityClusterProps {
   hasBodyBelow: boolean;
   /** Persisted end-to-end turn latency from the assistant answer, used for history replay. */
   turnLatencyMs?: number;
-  cliApps?: CliAppInfo[];
   mcpPresets?: McpPresetInfo[];
 }
 
@@ -184,7 +164,6 @@ export function AgentActivityCluster({
   isTurnStreaming,
   hasBodyBelow,
   turnLatencyMs,
-  cliApps = [],
   mcpPresets = [],
 }: AgentActivityClusterProps) {
   const { t } = useTranslation();
@@ -192,12 +171,7 @@ export function AgentActivityCluster({
     () => summarizeFileEdits(collectFileEdits(messages), isTurnStreaming),
     [messages, isTurnStreaming],
   );
-  const cliRuns = useMemo(() => collectCliRuns(messages), [messages]);
   const mcpRuns = useMemo(() => collectMcpRuns(messages), [messages]);
-  const cliAppsByName = useMemo(
-    () => new Map(cliApps.map((app) => [app.name.toLowerCase(), app])),
-    [cliApps],
-  );
   const mcpPresetsByName = useMemo(
     () => new Map(mcpPresets.map((preset) => [preset.name.toLowerCase(), preset])),
     [mcpPresets],
@@ -205,7 +179,6 @@ export function AgentActivityCluster({
   const {
     reasoningSteps,
     toolCalls,
-    cliCount,
     mcpCount,
     fileCount,
     added,
@@ -216,11 +189,9 @@ export function AgentActivityCluster({
     hasDeletedFiles,
     primaryFilePath,
     primaryFileTooltipPath,
-    primaryCliName,
-    primaryCliStatus,
     primaryMcpDisplayName,
     primaryMcpStatus,
-  } = countActivity(messages, fileEdits, cliRuns, mcpRuns);
+  } = countActivity(messages, fileEdits, mcpRuns);
   const hasPendingFileEdit = fileEdits.some((edit) => edit.pending);
 
   const [userToggledOuter, setUserToggledOuter] = useState(false);
@@ -241,7 +212,7 @@ export function AgentActivityCluster({
   const hasLiveEditingFiles = isTurnStreaming && hasEditingFiles;
   const singleFilePath = fileCount === 1 ? primaryFilePath : undefined;
   const singleFileTooltipPath = fileCount === 1 ? primaryFileTooltipPath : undefined;
-  const hasVisibleActivity = reasoningSteps > 0 || toolCalls > 0 || cliCount > 0 || mcpCount > 0 || fileCount > 0;
+  const hasVisibleActivity = reasoningSteps > 0 || toolCalls > 0 || mcpCount > 0 || fileCount > 0;
   const hasOnlyFileActivity = fileCount > 0 && messages.every(messageHasOnlyFileActivity);
   const durationMs = activityDurationMs(messages, isTurnStreaming, now, turnLatencyMs);
   const activityDuration = formatActivityDuration(durationMs);
@@ -271,18 +242,6 @@ export function AgentActivityCluster({
         })
     : "";
 
-  const cliActivitySummary = cliCount > 0
-    ? cliCount === 1 && primaryCliName
-      ? t(cliActivitySummaryKey(primaryCliStatus, isTurnStreaming), {
-          name: primaryCliName,
-          defaultValue: cliActivitySummaryDefault(primaryCliStatus, isTurnStreaming),
-        })
-      : t(cliActivityManySummaryKey(cliRuns, isTurnStreaming), {
-          count: cliCount,
-          defaultValue: cliActivityManySummaryDefault(cliRuns, isTurnStreaming),
-        })
-    : "";
-
   const mcpActivitySummary = mcpCount > 0
     ? mcpCount === 1 && primaryMcpDisplayName
       ? t(mcpActivitySummaryKey(primaryMcpStatus, isTurnStreaming), {
@@ -297,8 +256,6 @@ export function AgentActivityCluster({
 
   const summary = fileCount > 0
     ? fileActivitySummary
-    : cliCount > 0
-      ? cliActivitySummary
     : mcpCount > 0
       ? mcpActivitySummary
     : isTurnStreaming
@@ -503,7 +460,6 @@ export function AgentActivityCluster({
                       key={m.id}
                       message={m}
                       active={isTurnStreaming}
-                      cliAppsByName={cliAppsByName}
                       mcpPresetsByName={mcpPresetsByName}
                     />
                   );
@@ -653,16 +609,13 @@ function ActivityTraceList({
 function ActivityTraceTimeline({
   message,
   active,
-  cliAppsByName,
   mcpPresetsByName,
 }: {
   message: UIMessage;
   active: boolean;
-  cliAppsByName: Map<string, CliAppInfo>;
   mcpPresetsByName: Map<string, McpPresetInfo>;
 }) {
   const lines = traceLines(message);
-  const cliRunsByLine = cliRunMapByTraceLine(message);
   const mcpRunsByLine = mcpRunMapByTraceLine(message);
   const evidenceByLine = toolEvidenceByTraceLine(message);
   const trailingEvidence = activityEvidenceFromMessageMedia(message);
@@ -684,30 +637,6 @@ function ActivityTraceTimeline({
   };
 
   lines.forEach((line, index) => {
-    const cliRun = cliRunsByLine.get(line) ?? parseCliRunTrace(line);
-    if (cliRun) {
-      flushNormalLines(String(index));
-      renderedRunKeys.add(cliRun.key);
-      items.push(
-        <CliRunGroup
-          key={`${message.id}:cli:${cliRun.key}:${index}`}
-          runs={[cliRun]}
-          active={active}
-          cliAppsByName={cliAppsByName}
-        />,
-      );
-      const evidence = evidenceByLine.get(line) ?? [];
-      if (evidence.length) {
-        items.push(
-          <ActivityEvidenceList
-            key={`${message.id}:cli-evidence:${cliRun.key}:${index}`}
-            evidence={evidence}
-          />,
-        );
-      }
-      return;
-    }
-
     const mcpRun = mcpRunsByLine.get(line) ?? parseMcpRunTrace(line);
     if (mcpRun) {
       flushNormalLines(String(index));
@@ -737,17 +666,6 @@ function ActivityTraceTimeline({
 
   flushNormalLines("tail");
 
-  for (const run of cliRunsByLine.values()) {
-    if (renderedRunKeys.has(run.key)) continue;
-    items.push(
-      <CliRunGroup
-        key={`${message.id}:cli:${run.key}:event`}
-        runs={[run]}
-        active={active}
-        cliAppsByName={cliAppsByName}
-      />,
-    );
-  }
   for (const run of mcpRunsByLine.values()) {
     if (renderedRunKeys.has(run.key)) continue;
     items.push(
@@ -857,7 +775,7 @@ function describeActivityGroup(
   }
   if (names.some((name) => /browser|screenshot/.test(name))) return { title: "Browser", icon: FileImage };
   if (names.some((name) => /web|search|fetch|read|open/.test(name))) return { title: "Web", icon: Search };
-  if (names.some((name) => /exec|shell|terminal|bash|run_cli_app|cli_anything/.test(name))) return { title: "Shell", icon: Terminal };
+  if (names.some((name) => /exec|shell|terminal|bash/.test(name))) return { title: "Shell", icon: Terminal };
   if (names.some((name) => /^mcp_|mcp/.test(name))) return { title: "MCP", icon: Server };
   if (message.fileEdits?.length) return { title: "Files", icon: Layers };
   if (evidence.length) return { title: "Media", icon: FileImage };
@@ -1133,14 +1051,8 @@ function previewTraceDetail(args: string, fallback: string): string {
   return compactArgs.replace(/^["']|["']$/g, "");
 }
 
-const CLI_RUN_TOOL_NAMES = new Set(["run_cli_app", "cli_anything_run"]);
-const CLI_RUN_STATUS_RANK: Record<CliRunStatus, number> = { running: 1, done: 2, error: 3 };
 const MCP_RUN_STATUS_RANK: Record<McpRunStatus, number> = { running: 1, done: 2, error: 3 };
 const MCP_TOOL_NAME_RE = /^mcp_([a-z0-9_-]+?)_(.+)$/i;
-
-function isCliRunTraceLine(line: string): boolean {
-  return /^(run_cli_app|cli_anything_run)\(/.test(line.trim());
-}
 
 function isMcpRunTraceLine(line: string): boolean {
   return MCP_TOOL_NAME_RE.test(line.trim().split("(", 1)[0] ?? "");
@@ -1148,27 +1060,6 @@ function isMcpRunTraceLine(line: string): boolean {
 
 function isFileEditTraceLine(line: string): boolean {
   return /^(write_file|edit_file|apply_patch)\(/.test(line.trim());
-}
-
-function parseCliRunTrace(line: string, status: CliRunStatus = "running"): CliRunSummary | null {
-  const match = /^(run_cli_app|cli_anything_run)\((.*)\)$/.exec(line.trim());
-  if (!match) return null;
-  const argsText = match[2].trim();
-  let argsObject: unknown = {};
-  if (argsText) {
-    try {
-      argsObject = JSON.parse(argsText);
-    } catch {
-      return {
-        key: line,
-        name: "cli",
-        args: [argsText],
-        json: false,
-        status,
-      };
-    }
-  }
-  return cliRunFromArguments(argsObject, { key: line, status });
 }
 
 function parseToolEventArguments(event: ToolProgressEvent): unknown {
@@ -1202,89 +1093,6 @@ function toolEventName(event: ToolProgressEvent): string {
     : typeof event.name === "string"
       ? event.name
       : "";
-}
-
-function cliRunFromArguments(
-  argsObject: unknown,
-  options: { key: string; status: CliRunStatus; error?: string },
-): CliRunSummary {
-  if (!argsObject || typeof argsObject !== "object" || Array.isArray(argsObject)) {
-    return {
-      key: options.key,
-      name: "cli",
-      args: [],
-      json: false,
-      status: options.status,
-      error: options.error,
-    };
-  }
-  const record = argsObject as Record<string, unknown>;
-  const appName = typeof record.name === "string" && record.name.trim()
-    ? record.name.trim()
-    : "cli";
-  const rawArgs = Array.isArray(record.args) ? record.args : [];
-  const cliArgs = rawArgs.filter((item): item is string => typeof item === "string");
-  return {
-    key: options.key,
-    name: appName,
-    args: cliArgs,
-    json: record.json === true || record.json === "true",
-    workingDir: typeof record.working_dir === "string" ? record.working_dir : undefined,
-    status: options.status,
-    error: options.error,
-  };
-}
-
-function cliRunFromEvent(event: ToolProgressEvent): CliRunSummary | null {
-  const name = toolEventName(event);
-  if (!CLI_RUN_TOOL_NAMES.has(name)) return null;
-  const argsObject = parseToolEventArguments(event);
-  const key = event.call_id ? `call:${event.call_id}` : `${name}:${JSON.stringify(argsObject)}`;
-  return cliRunFromArguments(argsObject, {
-    key,
-    status: cliRunStatusFromPhase(event.phase),
-    error: cliRunError(event),
-  });
-}
-
-function cliRunMapByTraceLine(message: UIMessage): Map<string, CliRunSummary> {
-  const runsByLine = new Map<string, CliRunSummary>();
-  for (const event of message.toolEvents ?? []) {
-    const run = cliRunFromEvent(event);
-    if (!run) continue;
-    const line = formatToolCallTrace(event);
-    if (!line) continue;
-    runsByLine.set(line, mergeCliRun(runsByLine.get(line), run));
-  }
-  return runsByLine;
-}
-
-function mergeCliRun(existing: CliRunSummary | undefined, incoming: CliRunSummary): CliRunSummary {
-  if (!existing) return incoming;
-  return CLI_RUN_STATUS_RANK[incoming.status] >= CLI_RUN_STATUS_RANK[existing.status]
-    ? { ...existing, ...incoming }
-    : existing;
-}
-
-function collectCliRuns(messages: UIMessage[]): CliRunSummary[] {
-  const runsByKey = new Map<string, CliRunSummary>();
-  for (const message of messages) {
-    if (message.kind !== "trace") continue;
-    let hasStructuredCliRun = false;
-    for (const event of message.toolEvents ?? []) {
-      const run = cliRunFromEvent(event);
-      if (!run) continue;
-      hasStructuredCliRun = true;
-      runsByKey.set(run.key, mergeCliRun(runsByKey.get(run.key), run));
-    }
-    if (hasStructuredCliRun) continue;
-    for (const line of traceLines(message)) {
-      const run = parseCliRunTrace(line);
-      if (!run || runsByKey.has(run.key)) continue;
-      runsByKey.set(run.key, run);
-    }
-  }
-  return [...runsByKey.values()];
 }
 
 function titleFromPresetName(name: string): string {
@@ -1401,47 +1209,6 @@ function collectMcpRuns(messages: UIMessage[]): McpRunSummary[] {
     }
   }
   return [...runsByKey.values()];
-}
-
-function displayCliArg(arg: string): string {
-  return /\s/.test(arg) ? JSON.stringify(arg) : arg;
-}
-
-function formatCliArgs(run: CliRunSummary): string {
-  const args = [...(run.json ? ["--json"] : []), ...run.args].map(displayCliArg);
-  return args.join(" ");
-}
-
-function cliActivitySummaryKey(status: CliRunStatus | undefined, active: boolean): string {
-  if (status === "error") return "message.cliActivityFailedOne";
-  return active && status === "running" ? "message.cliActivityRunningOne" : "message.cliActivityRanOne";
-}
-
-function cliActivitySummaryDefault(status: CliRunStatus | undefined, active: boolean): string {
-  if (status === "error") return "Failed @{{name}}";
-  return `${active && status === "running" ? "Using" : "Used"} @{{name}}`;
-}
-
-function cliActivityManySummaryKey(runs: CliRunSummary[], active: boolean): string {
-  if (runs.some((run) => run.status === "error")) return "message.cliActivityFailedMany";
-  return active && runs.some((run) => run.status === "running")
-    ? "message.cliActivityRunningMany"
-    : "message.cliActivityRanMany";
-}
-
-function cliActivityManySummaryDefault(runs: CliRunSummary[], active: boolean): string {
-  if (runs.some((run) => run.status === "error")) return "{{count}} CLI apps failed";
-  return `${active && runs.some((run) => run.status === "running") ? "Using" : "Used"} {{count}} CLI apps`;
-}
-
-function cliRunLabelKey(run: CliRunSummary, active: boolean): string {
-  if (run.status === "error") return "message.cliRunFailed";
-  return active && run.status === "running" ? "message.cliRunRunning" : "message.cliRunRan";
-}
-
-function cliRunLabelDefault(run: CliRunSummary, active: boolean): string {
-  if (run.status === "error") return "Failed";
-  return active && run.status === "running" ? "Using" : "Used";
 }
 
 function mcpActivitySummaryKey(status: McpRunStatus | undefined, active: boolean): string {
@@ -1639,117 +1406,6 @@ function summarizeFileEdits(edits: UIFileEdit[], active: boolean): FileEditSumma
       error: summary.error,
     }];
   });
-}
-
-function CliRunGroup({
-  runs,
-  active,
-  cliAppsByName,
-}: {
-  runs: CliRunSummary[];
-  active: boolean;
-  cliAppsByName: Map<string, CliAppInfo>;
-}) {
-  if (runs.length === 0) return null;
-  return (
-    <ul className="space-y-1" data-testid="activity-cli-runs">
-      {runs.map((run) => (
-        <CliRunRow
-          key={run.key}
-          run={run}
-          active={active}
-          app={cliAppsByName.get(run.name.toLowerCase())}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function CliRunRow({ run, active, app }: { run: CliRunSummary; active: boolean; app?: CliAppInfo }) {
-  const { t } = useTranslation();
-  const [logoIndex, setLogoIndex] = useState(0);
-  const args = formatCliArgs(run);
-  const failed = run.status === "error";
-  const rowActive = active && run.status === "running";
-  const color = failed ? "#DC2626" : app?.brand_color || "#0891B2";
-  const logoUrls = useMemo(() => logoFallbackUrls(app?.logo_url), [app?.logo_url]);
-  const logoUrl = logoUrls[logoIndex];
-  const label = t(cliRunLabelKey(run, active), {
-    defaultValue: cliRunLabelDefault(run, active),
-  });
-
-  useEffect(() => setLogoIndex(0), [app?.logo_url]);
-
-  return (
-    <ActivityStep
-      as="li"
-      active={rowActive}
-      tone={failed ? "error" : rowActive ? "active" : run.status === "done" ? "success" : "neutral"}
-      title={`${label} @${run.name}${args ? ` ${args}` : ""}${run.error ? ` ${run.error}` : ""}`}
-      label={label}
-      marker={(
-        <span
-          data-testid={`activity-cli-logo-${run.name.toLowerCase()}`}
-          className={cn(
-            "grid h-4 w-4 shrink-0 place-items-center overflow-hidden rounded-[4px] border text-[6.5px] font-semibold text-white",
-            rowActive && "animate-pulse",
-          )}
-          style={{
-            borderColor: alphaColor(color, 22),
-            backgroundColor: logoUrl ? "hsl(var(--background))" : color,
-            boxShadow: rowActive ? `0 0 0 3px ${alphaColor(color, 9)}` : undefined,
-          }}
-          aria-hidden
-        >
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt=""
-              className="h-[78%] w-[78%] object-contain"
-              onError={() => setLogoIndex((index) => index + 1)}
-            />
-          ) : app ? (
-            cliAppInitials(app).slice(0, 2)
-          ) : (
-            <Terminal className="h-3 w-3" aria-hidden />
-          )}
-        </span>
-      )}
-    >
-      <div className="-mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-        <span className="max-w-[11rem] shrink-0 truncate font-mono text-[12.5px] font-semibold text-foreground/90">
-          @{run.name}
-        </span>
-        {failed ? (
-          <AlertCircle className="h-3 w-3 shrink-0 translate-y-[0.16em] text-destructive/75" aria-hidden />
-        ) : null}
-        {args ? (
-          <>
-            <span className="shrink-0 text-muted-foreground/36">·</span>
-            <span className="min-w-0 truncate font-mono text-[12px] text-muted-foreground/72">
-              {args}
-            </span>
-          </>
-        ) : null}
-        {run.error ? (
-          <>
-            <span className="shrink-0 text-muted-foreground/30">·</span>
-            <span className="min-w-0 truncate text-[12px] text-destructive/72">
-              {run.error}
-            </span>
-          </>
-        ) : null}
-        {run.workingDir && !run.error ? (
-          <>
-            <span className="shrink-0 text-muted-foreground/30">·</span>
-            <span className="min-w-0 truncate text-[12px] text-muted-foreground/55">
-              {run.workingDir}
-            </span>
-          </>
-        ) : null}
-      </div>
-    </ActivityStep>
-  );
 }
 
 function McpRunGroup({

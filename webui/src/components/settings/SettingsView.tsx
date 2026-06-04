@@ -67,11 +67,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   createModelConfiguration,
   fetchSettings,
-  fetchCliApps,
   fetchMcpPresets,
   fetchProviderModels,
   importMcpConfig,
-  runCliAppAction,
   runMcpPresetAction,
   saveCustomMcpServer,
   updateMcpServerTools,
@@ -81,7 +79,6 @@ import {
   updateSettings,
   updateWebSearchSettings,
 } from "@/lib/api";
-import { notifyCliAppsChanged } from "@/lib/cli-app-events";
 import { getHostApi } from "@/lib/runtime";
 import { notifyMcpPresetsChanged } from "@/lib/mcp-preset-events";
 import {
@@ -92,8 +89,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
 import type {
-  CliAppInfo,
-  CliAppsPayload,
   McpPresetInfo,
   McpPresetsPayload,
   NetworkSafetySettingsUpdate,
@@ -117,7 +112,6 @@ type LocalDensity = "comfortable" | "compact";
 type LocalActivityMode = "auto" | "expanded";
 type AppsKindFilter = "all" | "cli" | "mcp";
 type AppsCatalogItem =
-  | { id: string; kind: "cli"; app: CliAppInfo }
   | { id: string; kind: "mcp"; preset: McpPresetInfo };
 
 interface LocalPreferences {
@@ -306,10 +300,8 @@ export function SettingsView({
   const { t } = useTranslation();
   const { token } = useClient();
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
-  const [cliApps, setCliApps] = useState<CliAppsPayload | null>(null);
   const [mcpPresets, setMcpPresets] = useState<McpPresetsPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cliAppsLoading, setCliAppsLoading] = useState(true);
   const [mcpPresetsLoading, setMcpPresetsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modelConfigurationOpen, setModelConfigurationOpen] = useState(false);
@@ -319,7 +311,6 @@ export function SettingsView({
     provider: "",
     model: "",
   });
-  const [cliAppsAction, setCliAppsAction] = useState<string | null>(null);
   const [mcpPresetAction, setMcpPresetAction] = useState<string | null>(null);
   const [providerSaving, setProviderSaving] = useState<string | null>(null);
   const [webSearchSaving, setWebSearchSaving] = useState(false);
@@ -330,9 +321,6 @@ export function SettingsView({
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [providerQuery, setProviderQuery] = useState("");
   const [appsQuery, setAppsQuery] = useState("");
-  const [cliAppsMessage, setCliAppsMessage] = useState<string | null>(null);
-  const [cliAppsError, setCliAppsError] = useState<string | null>(null);
-  const [cliAppsFocusName, setCliAppsFocusName] = useState<string | null>(null);
   const [appsKindFilter, setAppsKindFilter] = useState<AppsKindFilter>("all");
   const [mcpMessage, setMcpMessage] = useState<string | null>(null);
   const [mcpError, setMcpError] = useState<string | null>(null);
@@ -445,28 +433,6 @@ export function SettingsView({
       cancelled = true;
     };
   }, [applyPayload, token]);
-
-  useEffect(() => {
-    if (activeSection !== "apps") return;
-    let cancelled = false;
-    setCliAppsLoading(true);
-    fetchCliApps(token)
-      .then((payload) => {
-        if (!cancelled) {
-          setCliApps(payload);
-          setCliAppsError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setCliAppsError((err as Error).message);
-      })
-      .finally(() => {
-        if (!cancelled) setCliAppsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeSection, token]);
 
   useEffect(() => {
     if (activeSection !== "apps") return;
@@ -904,29 +870,6 @@ export function SettingsView({
     });
   };
 
-  const handleCliAppAction = async (
-    action: "install" | "update" | "uninstall" | "test",
-    name: string,
-  ) => {
-    const key = `${action}:${name}`;
-    setCliAppsAction(key);
-    setCliAppsMessage(null);
-    setCliAppsError(null);
-    try {
-      const payload = await runCliAppAction(token, action, name);
-      setCliApps(payload);
-      if (action !== "test") {
-        notifyCliAppsChanged(payload);
-      }
-      setCliAppsMessage(payload.last_action?.message ?? null);
-      setCliAppsFocusName(action === "uninstall" ? null : name);
-    } catch (err) {
-      setCliAppsError((err as Error).message);
-    } finally {
-      setCliAppsAction(null);
-    }
-  };
-
   const handleMcpPresetAction = async (
     action: "enable" | "remove" | "test",
     name: string,
@@ -1127,17 +1070,11 @@ export function SettingsView({
       case "apps":
         return (
           <AppsCatalogSettings
-            cliApps={cliApps}
             mcpPresets={mcpPresets}
-            cliAppsLoading={cliAppsLoading}
             mcpPresetsLoading={mcpPresetsLoading}
             query={appsQuery}
             filter={appsKindFilter}
-            cliActionKey={cliAppsAction}
             mcpActionKey={mcpPresetAction}
-            cliMessage={cliAppsMessage}
-            cliError={cliAppsError}
-            cliFocusName={cliAppsFocusName}
             mcpMessage={mcpMessage}
             mcpError={mcpError}
             mcpFieldValues={mcpFieldValues}
@@ -1147,11 +1084,8 @@ export function SettingsView({
             requiresRestartPending={pendingRestartSections.runtime}
             onQueryChange={setAppsQuery}
             onFilterChange={setAppsKindFilter}
-            onCliAction={handleCliAppAction}
             onMcpAction={handleMcpPresetAction}
             onDismissStatus={() => {
-              setCliAppsMessage(null);
-              setCliAppsError(null);
               setMcpMessage(null);
               setMcpError(null);
             }}
@@ -2357,17 +2291,11 @@ function WebSettings({
 }
 
 function AppsCatalogSettings({
-  cliApps,
   mcpPresets,
-  cliAppsLoading,
   mcpPresetsLoading,
   query,
   filter,
-  cliActionKey,
   mcpActionKey,
-  cliMessage,
-  cliError,
-  cliFocusName,
   mcpMessage,
   mcpError,
   mcpFieldValues,
@@ -2377,10 +2305,8 @@ function AppsCatalogSettings({
   requiresRestartPending,
   onQueryChange,
   onFilterChange,
-  onCliAction,
   onMcpAction,
   onDismissStatus,
-  onBackToChat,
   onMcpFieldChange,
   onCustomMcpFormChange,
   onMcpConfigImportChange,
@@ -2390,17 +2316,11 @@ function AppsCatalogSettings({
   onRestart,
   isRestarting,
 }: {
-  cliApps: CliAppsPayload | null;
   mcpPresets: McpPresetsPayload | null;
-  cliAppsLoading: boolean;
   mcpPresetsLoading: boolean;
   query: string;
   filter: AppsKindFilter;
-  cliActionKey: string | null;
   mcpActionKey: string | null;
-  cliMessage: string | null;
-  cliError: string | null;
-  cliFocusName: string | null;
   mcpMessage: string | null;
   mcpError: string | null;
   mcpFieldValues: Record<string, Record<string, string>>;
@@ -2410,7 +2330,6 @@ function AppsCatalogSettings({
   requiresRestartPending: boolean;
   onQueryChange: (value: string) => void;
   onFilterChange: (value: AppsKindFilter) => void;
-  onCliAction: (action: "install" | "update" | "uninstall" | "test", name: string) => void;
   onMcpAction: (action: "enable" | "remove" | "test", name: string, values?: Record<string, string>) => void;
   onDismissStatus: () => void;
   onBackToChat: () => void;
@@ -2427,12 +2346,10 @@ function AppsCatalogSettings({
   const tx = (key: string, fallback: string) => t(key, { defaultValue: fallback });
   const filterOptions = [
     { value: "all", label: tx("settings.apps.filterAll", "All") },
-    { value: "cli", label: tx("settings.apps.filterCli", "App CLIs") },
     { value: "mcp", label: tx("settings.apps.filterMcp", "MCP services") },
   ];
   const normalizedQuery = query.trim().toLowerCase();
   const items: AppsCatalogItem[] = [
-    ...(cliApps?.apps ?? []).map((app) => ({ id: `cli:${app.name}`, kind: "cli" as const, app })),
     ...(mcpPresets?.presets ?? []).map((preset) => ({
       id: `mcp:${preset.name}`,
       kind: "mcp" as const,
@@ -2445,14 +2362,10 @@ function AppsCatalogSettings({
       const rank = Number(!appsReady(left)) - Number(!appsReady(right));
       return rank || appsTitle(left).localeCompare(appsTitle(right));
     });
-  const focusedApp = cliFocusName
-    ? (cliApps?.apps ?? []).find((app) => app.name === cliFocusName && app.installed)
-    : null;
-  const loading = (cliAppsLoading || mcpPresetsLoading) && !cliApps && !mcpPresets;
-  const statusMessage = cliError || mcpError || (!focusedApp ? cliMessage || mcpMessage : null);
-  const statusIsError = Boolean(cliError || mcpError);
+  const loading = (mcpPresetsLoading) && !mcpPresets;
+  const statusMessage = mcpError || mcpMessage;
+  const statusIsError = Boolean(mcpError);
   const caption = tx("settings.apps.caption", "{{cli}} CLI · {{mcp}} MCP")
-    .replace("{{cli}}", String(cliApps?.installed_count ?? 0))
     .replace("{{mcp}}", String(mcpPresets?.installed_count ?? 0));
 
   return (
@@ -2512,10 +2425,6 @@ function AppsCatalogSettings({
         </div>
       ) : null}
 
-      {focusedApp ? (
-        <CliAppReadyPanel app={focusedApp} showBrandLogos={showBrandLogos} onBackToChat={onBackToChat} />
-      ) : null}
-
       {requiresRestartPending ? (
         <div className="flex flex-col gap-3 rounded-[12px] border border-amber-500/20 bg-amber-500/8 px-4 py-3 text-[12.5px] text-amber-800 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
           <span>{tx("settings.mcp.restartRequired", "Restart neonanobot to connect updated MCP tools.")}</span>
@@ -2554,15 +2463,7 @@ function AppsCatalogSettings({
         ) : items.length ? (
           <div className="grid gap-x-10 gap-y-1 py-3 md:grid-cols-2">
             {items.map((item) =>
-              item.kind === "cli" ? (
-                <CliAppsCatalogRow
-                  key={item.id}
-                  app={item.app}
-                  actionKey={cliActionKey}
-                  showBrandLogos={showBrandLogos}
-                  onAction={onCliAction}
-                />
-              ) : (
+              (
                 <McpAppsCatalogRow
                   key={item.id}
                   preset={item.preset}
@@ -2597,93 +2498,6 @@ function AppsCatalogSettings({
 
       <ThirdPartyBrandNotice />
     </div>
-  );
-}
-
-function CliAppsCatalogRow({
-  app,
-  actionKey,
-  showBrandLogos,
-  onAction,
-}: {
-  app: CliAppInfo;
-  actionKey: string | null;
-  showBrandLogos: boolean;
-  onAction: (action: "install" | "update" | "uninstall" | "test", name: string) => void;
-}) {
-  const { t } = useTranslation();
-  const tx = (key: string, fallback: string) => t(key, { defaultValue: fallback });
-  const installBusy = actionKey === `install:${app.name}`;
-  const updateBusy = actionKey === `update:${app.name}`;
-  const uninstallBusy = actionKey === `uninstall:${app.name}`;
-  const testBusy = actionKey === `test:${app.name}`;
-  const busy = installBusy || updateBusy || uninstallBusy || testBusy;
-  const description = app.description || app.requires || app.entry_point || app.name;
-
-  return (
-    <article className="group flex min-w-0 items-center gap-3 rounded-[14px] px-3 py-3 transition-colors hover:bg-muted/45">
-      <CliAppLogo app={app} showBrandLogos={showBrandLogos} />
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-baseline gap-2">
-          <h3 className="truncate text-[14px] font-semibold leading-5 text-foreground">{app.display_name}</h3>
-          <AppsTypeBadge>{tx("settings.apps.cliLabel", "CLI")}</AppsTypeBadge>
-        </div>
-        <p className="mt-0.5 truncate text-[12.5px] leading-5 text-muted-foreground">{description}</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {app.installed ? (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <AppsActionButton
-                  ariaLabel={tx("settings.cliApps.statusInstalled", "CLI installed")}
-                  busy={testBusy || updateBusy}
-                  disabled={busy}
-                  tone="installed"
-                >
-                  <Check className="h-4 w-4" aria-hidden />
-                </AppsActionButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled={busy} onClick={() => onAction("test", app.name)}>
-                  <PlayCircle className="mr-2 h-3.5 w-3.5" aria-hidden />
-                  {tx("settings.cliApps.test", "Test CLI")}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={busy} onClick={() => onAction("update", app.name)}>
-                  <RotateCcw className="mr-2 h-3.5 w-3.5" aria-hidden />
-                  {tx("settings.cliApps.update", "Update CLI")}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={busy} onClick={() => onAction("uninstall", app.name)}>
-                  <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />
-                  {tx("settings.cliApps.uninstall", "Uninstall CLI")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <AppsActionButton
-              ariaLabel={tx("settings.cliApps.uninstall", "Uninstall CLI")}
-              busy={uninstallBusy}
-              disabled={busy && !uninstallBusy}
-              tone="danger"
-              onClick={() => onAction("uninstall", app.name)}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-            </AppsActionButton>
-          </>
-        ) : app.install_supported ? (
-          <AppsActionButton
-            ariaLabel={tx("settings.cliApps.install", "Install CLI")}
-            busy={installBusy}
-            onClick={() => onAction("install", app.name)}
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-          </AppsActionButton>
-        ) : (
-          <AppsActionButton ariaLabel={tx("settings.cliApps.unavailable", "Unavailable")} disabled>
-            <Plus className="h-4 w-4" aria-hidden />
-          </AppsActionButton>
-        )}
-      </div>
-    </article>
   );
 }
 
@@ -2967,7 +2781,7 @@ const AppsActionButton = forwardRef<HTMLButtonElement, {
   busy?: boolean;
   disabled?: boolean;
   tone?: "default" | "installed" | "danger";
-  onClick?: () => void;
+onClick?: () => void;
   children: ReactNode;
 }>(function AppsActionButton({
   ariaLabel,
@@ -3000,28 +2814,14 @@ const AppsActionButton = forwardRef<HTMLButtonElement, {
 });
 
 function appsTitle(item: AppsCatalogItem): string {
-  return item.kind === "cli" ? item.app.display_name : item.preset.display_name;
+  return item.preset.display_name;
 }
 
 function appsReady(item: AppsCatalogItem): boolean {
-  return item.kind === "cli" ? item.app.installed : item.preset.installed && item.preset.configured;
+  return item.preset.installed && item.preset.configured;
 }
 
 function appsSearchText(item: AppsCatalogItem): string {
-  if (item.kind === "cli") {
-    const app = item.app;
-    return [
-      app.display_name,
-      app.name,
-      app.category,
-      app.description,
-      app.requires,
-      app.entry_point,
-      app.source,
-    ]
-      .join(" ")
-      .toLowerCase();
-  }
   const preset = item.preset;
   return [
     preset.display_name,
@@ -3307,123 +3107,6 @@ function McpPresetLogo({ preset, showBrandLogos }: { preset: McpPresetInfo; show
       <span
         className="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] border border-border/45 bg-background"
         style={{ boxShadow: `inset 0 0 0 1px ${preset.brand_color ?? "transparent"}22` }}
-      >
-        <img
-          src={logoUrl}
-          alt=""
-          className="h-6 w-6 object-contain"
-          onError={() => setLogoIndex((index) => index + 1)}
-        />
-      </span>
-    );
-  }
-  return (
-    <span
-      className="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] text-[13px] font-semibold text-white"
-      style={{ backgroundColor: bg }}
-    >
-      {initials}
-    </span>
-  );
-}
-
-function CliAppReadyPanel({
-  app,
-  showBrandLogos,
-  onBackToChat,
-}: {
-  app: CliAppInfo;
-  showBrandLogos: boolean;
-  onBackToChat: () => void;
-}) {
-  const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  const prompt = t("settings.cliApps.readyPrompt", {
-    name: app.name,
-    defaultValue: "Use @{{name}} to inspect what this CLI can do.",
-  });
-  const copyPrompt = () => {
-    if (!navigator.clipboard) return;
-    void navigator.clipboard.writeText(prompt).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    });
-  };
-
-  return (
-    <section
-      className={cn(
-        "rounded-[12px] border border-border/55 bg-card/88 px-4 py-3",
-        "shadow-[0_8px_26px_rgba(15,23,42,0.055)]",
-      )}
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <CliAppLogo app={app} showBrandLogos={showBrandLogos} />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h3 className="truncate text-[14px] font-semibold leading-5 text-foreground">
-              {app.display_name}
-            </h3>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
-              <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-300" aria-hidden />
-              {t("settings.cliApps.readyStatus", { defaultValue: "Ready" })}
-            </span>
-          </div>
-          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
-            <span className="font-mono">@{app.name}</span>
-            <span aria-hidden>·</span>
-            <span className="truncate font-mono">{app.entry_point || app.name}</span>
-            <span aria-hidden>·</span>
-            <span>{app.category}</span>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={copyPrompt}
-            className="h-8 rounded-full px-3 text-[12px] font-medium text-muted-foreground hover:bg-muted/65 hover:text-foreground"
-          >
-            {copied ? <Check className="mr-1.5 h-3.5 w-3.5" aria-hidden /> : null}
-            {copied
-              ? t("settings.cliApps.readyCopied", { defaultValue: "Copied" })
-              : t("settings.cliApps.readyTry", { name: app.name, defaultValue: "Try @{{name}}" })}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={onBackToChat}
-            className="h-8 rounded-full px-3 text-[12px] font-semibold"
-          >
-            {t("settings.cliApps.openChat", { defaultValue: "Open chat" })}
-            <ChevronRight className="ml-1.5 h-3.5 w-3.5" aria-hidden />
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CliAppLogo({ app, showBrandLogos }: { app: CliAppInfo; showBrandLogos: boolean }) {
-  const [logoIndex, setLogoIndex] = useState(0);
-  const bg = app.brand_color || "hsl(var(--muted))";
-  const logoUrls = useMemo(() => logoFallbackUrls(app.logo_url), [app.logo_url]);
-  const logoUrl = logoUrls[logoIndex];
-  const initials = app.display_name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || app.name.slice(0, 2).toUpperCase();
-
-  useEffect(() => setLogoIndex(0), [app.logo_url]);
-
-  if (showBrandLogos && logoUrl) {
-    return (
-      <span
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] border border-border/45 bg-background"
-        style={{ boxShadow: `inset 0 0 0 1px ${app.brand_color ?? "transparent"}22` }}
       >
         <img
           src={logoUrl}
