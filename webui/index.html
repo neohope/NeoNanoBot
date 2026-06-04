@@ -99,10 +99,6 @@
           "zh-CN": {
             boot: "正在加载 neonanobot…",
             description: "neonanobot Web UI —— 与你的 neonanobot 工作区对话。"
-          },
-          "zh-TW": {
-            boot: "正在載入 neonanobot…",
-            description: "neonanobot Web UI —— 與你的 neonanobot 工作區對話。"
           }
         };
 
@@ -114,14 +110,6 @@
           var lower = raw.toLowerCase();
           if (lower === "zh" || lower.indexOf("zh-cn") === 0 || lower.indexOf("zh-sg") === 0) {
             return "zh-CN";
-          }
-          if (
-            lower.indexOf("zh-tw") === 0 ||
-            lower.indexOf("zh-hk") === 0 ||
-            lower.indexOf("zh-mo") === 0 ||
-            lower.indexOf("zh-hant") === 0
-          ) {
-            return "zh-TW";
           }
           var base = lower.split("-")[0];
           return copy[base] ? base : "en";

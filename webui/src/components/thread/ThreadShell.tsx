@@ -7,16 +7,10 @@ import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
 import { useNanobotStream, type SendImage, type SendOptions } from "@/hooks/useNanobotStream";
 import { useSessionHistory } from "@/hooks/useSessions";
-import { fetchMcpPresets, fetchSettings, listSlashCommands } from "@/lib/api";
-import {
-  MCP_PRESETS_CHANGED_EVENT,
-  installedMcpPresetsFromPayload,
-  isMcpPresetsPayload,
-} from "@/lib/mcp-preset-events";
+import { fetchSettings, listSlashCommands } from "@/lib/api";
 import { inferProviderFromModelName, providerDisplayLabel } from "@/lib/provider-brand";
 import type {
   ChatSummary,
-  McpPresetInfo,
   SettingsPayload,
   SlashCommand,
   UIMessage,
@@ -160,7 +154,6 @@ export function ThreadShell({
   const { client, modelName, token } = useClient();
   const [booting, setBooting] = useState(false);
   const [slashCommands, setSlashCommands] = useState<SlashCommand[]>([]);
-  const [mcpPresets, setMcpPresets] = useState<McpPresetInfo[]>([]);
   const [settings, setSettings] = useState<SettingsPayload | null>(settingsSnapshot);
   const [heroGreetingKey, setHeroGreetingKey] = useState(randomHeroGreetingKey);
   const [scrollToBottomSignal, setScrollToBottomSignal] = useState(0);
@@ -365,50 +358,6 @@ export function ThreadShell({
     };
   }, [token]);
 
-  const refreshMcpPresets = useCallback(async () => {
-    try {
-      const payload = await fetchMcpPresets(token);
-      setMcpPresets(installedMcpPresetsFromPayload(payload));
-    } catch {
-      setMcpPresets([]);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const payload = await fetchMcpPresets(token);
-        if (!cancelled) setMcpPresets(installedMcpPresetsFromPayload(payload));
-      } catch {
-        if (!cancelled) setMcpPresets([]);
-      }
-    };
-    load();
-
-    const refreshOnFocus = () => {
-      if (document.visibilityState === "hidden") return;
-      void refreshMcpPresets();
-    };
-    window.addEventListener("focus", refreshOnFocus);
-    document.addEventListener("visibilitychange", refreshOnFocus);
-    const refreshOnMcpPresetsChanged = (event: Event) => {
-      const payload = (event as CustomEvent<unknown>).detail;
-      if (isMcpPresetsPayload(payload)) {
-        setMcpPresets(installedMcpPresetsFromPayload(payload));
-        return;
-      }
-      void refreshMcpPresets();
-    };
-    window.addEventListener(MCP_PRESETS_CHANGED_EVENT, refreshOnMcpPresetsChanged);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("focus", refreshOnFocus);
-      document.removeEventListener("visibilitychange", refreshOnFocus);
-      window.removeEventListener(MCP_PRESETS_CHANGED_EVENT, refreshOnMcpPresetsChanged);
-    };
-  }, [refreshMcpPresets, token]);
-
   const handleWelcomeSend = useCallback(
     async (content: string, images?: SendImage[], options?: SendOptions) => {
       if (booting) return;
@@ -454,7 +403,6 @@ export function ThreadShell({
           modelProviderLabel={modelBadge.providerLabel}
           variant={showHeroComposer ? "hero" : "thread"}
           slashCommands={slashCommands}
-          mcpPresets={mcpPresets}
           onStop={stop}
           runStartedAt={runStartedAt}
           goalState={goalState}
@@ -481,7 +429,6 @@ export function ThreadShell({
           modelProviderLabel={modelBadge.providerLabel}
           variant="hero"
           slashCommands={slashCommands}
-          mcpPresets={mcpPresets}
           runStartedAt={runStartedAt}
           goalState={goalState}
           workspaceScope={workspaceScope}
@@ -528,7 +475,6 @@ export function ThreadShell({
         scrollToBottomSignal={scrollToBottomSignal}
         conversationKey={historyKey}
         showScrollToBottomButton={!!session}
-        mcpPresets={mcpPresets}
       />
     </section>
   );

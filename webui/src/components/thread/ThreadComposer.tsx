@@ -11,11 +11,6 @@ import {
 
 import { MarkdownText, preloadMarkdownText } from "@/components/MarkdownText";
 import {
-  McpPresetMentionToken,
-  splitCapabilityMentionSegments,
-  type CapabilityMentionSegment,
-} from "@/components/CliAppMentionText";
-import {
   Activity,
   ArrowUp,
   BookOpen,
@@ -58,8 +53,6 @@ import { useClipboardAndDrop } from "@/hooks/useClipboardAndDrop";
 import type { SendImage, SendOptions } from "@/hooks/useNanobotStream";
 import type {
   GoalStateWsPayload,
-  McpPresetInfo,
-  OutboundMcpPresetMention,
   SlashCommand,
   WorkspaceScopePayload,
   WorkspacesPayload,
@@ -621,7 +614,6 @@ export function ThreadComposer({
   modelProviderLabel = null,
   variant = "thread",
   slashCommands = [],
-  mcpPresets = [],
   onStop,
   runStartedAt = null,
   goalState,
@@ -1086,7 +1078,6 @@ export function ThreadComposer({
     clear();
     clearComposerText();
   }, [
-    activeMcpPresetMentions,
     canSend,
     clear,
     clearComposerText,
@@ -1678,20 +1669,6 @@ function ComposerCliMentionOverlay({
         "pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words text-foreground",
       )}
     >
-      {segments.map((segment, index) => {
-        if (segment.kind === "text") {
-          return <span key={`text-${index}`}>{segment.text}</span>;
-        }
-        return (
-          <McpPresetMentionToken
-            key={`mcp-${segment.preset.name}-${index}`}
-            preset={segment.preset}
-            label={segment.text}
-            variant="composer"
-            isHero={isHero}
-          />
-        );
-      })}
     </div>
   );
 }

@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { mcpPresetInitials } from "@/components/CliAppMentionText";
 import { FileReferenceChip } from "@/components/FileReferenceChip";
 import { StreamingLabelSheen } from "@/components/MessageBubble";
 import { ActivityEvidencePreview } from "@/components/thread/activity/ActivityEvidencePreview";
@@ -32,7 +31,7 @@ import {
 import { faviconUrls, logoFallbackUrls } from "@/lib/provider-brand";
 import { formatToolCallTrace } from "@/lib/tool-traces";
 import { cn } from "@/lib/utils";
-import type { McpPresetInfo, ToolProgressEvent, UIFileEdit, UIMessage } from "@/lib/types";
+import type { ToolProgressEvent, UIFileEdit, UIMessage } from "@/lib/types";
 
 /** Scrollport height for the Cursor-style “live trace” strip (tailwind spacing). */
 const CLUSTER_SCROLL_MAX_CLASS = "max-h-52";
@@ -43,7 +42,6 @@ export { isAgentActivityMember, isReasoningOnlyAssistant };
 interface ActivityCounts {
   reasoningSteps: number;
   toolCalls: number;
-  mcpCount: number;
   fileCount: number;
   added: number;
   deleted: number;
@@ -53,35 +51,14 @@ interface ActivityCounts {
   hasDeletedFiles: boolean;
   primaryFilePath?: string;
   primaryFileTooltipPath?: string;
-  primaryCliName?: string;
-  primaryCliStatus?: CliRunStatus;
-  primaryMcpName?: string;
-  primaryMcpDisplayName?: string;
-  primaryMcpStatus?: McpRunStatus;
-}
-
-type CliRunStatus = "running" | "done" | "error";
-type McpRunStatus = "running" | "done" | "error";
-
-interface McpRunSummary {
-  key: string;
-  presetName: string;
-  displayName: string;
-  toolName: string;
-  argsPreview: string;
-  status: McpRunStatus;
-  error?: string;
 }
 
 function countActivity(
   messages: UIMessage[],
   fileEdits: FileEditSummary[],
-  mcpRuns: McpRunSummary[],
 ): ActivityCounts {
   let reasoningSteps = 0;
   let toolCalls = 0;
-  const mcpCount = mcpRuns.length;
-  const primaryMcp = mcpRuns[mcpRuns.length - 1];
   for (const m of messages) {
     if (isReasoningOnlyAssistant(m)) {
       reasoningSteps += 1;
@@ -89,11 +66,7 @@ function countActivity(
     }
     if (m.kind === "trace") {
       const lines = traceLines(m);
-      for (const line of lines) {
-        if (!isMcpRunTraceLine(line)) {
-          toolCalls += 1;
-        }
-      }
+      toolCalls = lines.length
     }
   }
   let added = 0;
@@ -129,7 +102,6 @@ function countActivity(
   return {
     reasoningSteps,
     toolCalls,
-    mcpCount,
     fileCount: fileEdits.length,
     added,
     deleted,
@@ -139,9 +111,6 @@ function countActivity(
     hasDeletedFiles: fileEdits.length > 0 && deletedFileCount === fileEdits.length,
     primaryFilePath,
     primaryFileTooltipPath,
-    primaryMcpName: primaryMcp?.presetName,
-    primaryMcpDisplayName: primaryMcp?.displayName,
-    primaryMcpStatus: primaryMcp?.status,
   };
 }
 
@@ -152,7 +121,6 @@ interface AgentActivityClusterProps {
   hasBodyBelow: boolean;
   /** Persisted end-to-end turn latency from the assistant answer, used for history replay. */
   turnLatencyMs?: number;
-  mcpPresets?: McpPresetInfo[];
 }
 
 /**
@@ -164,22 +132,15 @@ export function AgentActivityCluster({
   isTurnStreaming,
   hasBodyBelow,
   turnLatencyMs,
-  mcpPresets = [],
 }: AgentActivityClusterProps) {
   const { t } = useTranslation();
   const fileEdits = useMemo(
     () => summarizeFileEdits(collectFileEdits(messages), isTurnStreaming),
     [messages, isTurnStreaming],
   );
-  const mcpRuns = useMemo(() => collectMcpRuns(messages), [messages]);
-  const mcpPresetsByName = useMemo(
-    () => new Map(mcpPresets.map((preset) => [preset.name.toLowerCase(), preset])),
-    [mcpPresets],
-  );
   const {
     reasoningSteps,
     toolCalls,
-    mcpCount,
     fileCount,
     added,
     deleted,
@@ -189,9 +150,7 @@ export function AgentActivityCluster({
     hasDeletedFiles,
     primaryFilePath,
     primaryFileTooltipPath,
-    primaryMcpDisplayName,
-    primaryMcpStatus,
-  } = countActivity(messages, fileEdits, mcpRuns);
+  } = countActivity(messages, fileEdits);
   const hasPendingFileEdit = fileEdits.some((edit) => edit.pending);
 
   const [userToggledOuter, setUserToggledOuter] = useState(false);
@@ -239,18 +198,6 @@ export function AgentActivityCluster({
       : t(fileActivityManySummaryKey(hasLiveEditingFiles, hasFailedFiles, hasDeletedFiles), {
           count: fileCount,
           defaultValue: `${fileActivityVerb(hasLiveEditingFiles, hasFailedFiles, hasDeletedFiles)} {{count}} files`,
-        })
-    : "";
-
-  const mcpActivitySummary = mcpCount > 0
-    ? mcpCount === 1 && primaryMcpDisplayName
-      ? t(mcpActivitySummaryKey(primaryMcpStatus, isTurnStreaming), {
-          name: primaryMcpDisplayName,
-          defaultValue: mcpActivitySummaryDefault(primaryMcpStatus, isTurnStreaming),
-        })
-      : t(mcpActivityManySummaryKey(mcpRuns, isTurnStreaming), {
-          count: mcpCount,
-          defaultValue: mcpActivityManySummaryDefault(mcpRuns, isTurnStreaming),
         })
     : "";
 
@@ -1406,114 +1353,4 @@ function summarizeFileEdits(edits: UIFileEdit[], active: boolean): FileEditSumma
       error: summary.error,
     }];
   });
-}
-
-function McpRunGroup({
-  runs,
-  active,
-  mcpPresetsByName,
-}: {
-  runs: McpRunSummary[];
-  active: boolean;
-  mcpPresetsByName: Map<string, McpPresetInfo>;
-}) {
-  if (runs.length === 0) return null;
-  return (
-    <ul className="space-y-1" data-testid="activity-mcp-runs">
-      {runs.map((run) => (
-        <McpRunRow
-          key={run.key}
-          run={run}
-          active={active}
-          preset={mcpPresetsByName.get(run.presetName.toLowerCase())}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function McpRunRow({ run, active, preset }: { run: McpRunSummary; active: boolean; preset?: McpPresetInfo }) {
-  const { t } = useTranslation();
-  const [logoIndex, setLogoIndex] = useState(0);
-  const failed = run.status === "error";
-  const rowActive = active && run.status === "running";
-  const color = failed ? "#DC2626" : preset?.brand_color || "#6D5DF6";
-  const logoUrls = useMemo(() => logoFallbackUrls(preset?.logo_url), [preset?.logo_url]);
-  const logoUrl = logoUrls[logoIndex];
-  const displayName = preset?.display_name || run.displayName;
-  const label = t(mcpRunLabelKey(run, active), {
-    defaultValue: mcpRunLabelDefault(run, active),
-  });
-
-  useEffect(() => setLogoIndex(0), [preset?.logo_url]);
-
-  return (
-    <ActivityStep
-      as="li"
-      active={rowActive}
-      tone={failed ? "error" : rowActive ? "active" : run.status === "done" ? "success" : "neutral"}
-      title={`${label} ${displayName} ${run.toolName}${run.argsPreview ? ` ${run.argsPreview}` : ""}${run.error ? ` ${run.error}` : ""}`}
-      label={label}
-      marker={(
-        <span
-          data-testid={`activity-mcp-logo-${run.presetName.toLowerCase()}`}
-          className={cn(
-            "grid h-4 w-4 shrink-0 place-items-center overflow-hidden rounded-[4px] border text-[6.5px] font-semibold text-white",
-            rowActive && "animate-pulse",
-          )}
-          style={{
-            borderColor: alphaColor(color, 22),
-            backgroundColor: logoUrl ? "hsl(var(--background))" : color,
-            boxShadow: rowActive ? `0 0 0 3px ${alphaColor(color, 9)}` : undefined,
-          }}
-          aria-hidden
-        >
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt=""
-              className="h-[78%] w-[78%] object-contain"
-              onError={() => setLogoIndex((index) => index + 1)}
-            />
-          ) : preset ? (
-            mcpPresetInitials(preset).slice(0, 2)
-          ) : (
-            <Server className="h-3 w-3" aria-hidden />
-          )}
-        </span>
-      )}
-    >
-      <div className="-mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-        <span className="max-w-[12rem] shrink-0 truncate text-[12.5px] font-semibold text-foreground/90">
-          {displayName}
-        </span>
-        {failed ? (
-          <AlertCircle className="h-3 w-3 shrink-0 translate-y-[0.16em] text-destructive/75" aria-hidden />
-        ) : null}
-        <span className="shrink-0 text-muted-foreground/36">·</span>
-        <span className="min-w-0 truncate font-mono text-[12px] text-muted-foreground/72">
-          {run.toolName}
-          {run.argsPreview ? ` · ${run.argsPreview}` : ""}
-        </span>
-        {run.error ? (
-          <>
-            <span className="shrink-0 text-muted-foreground/30">·</span>
-            <span className="min-w-0 truncate text-[12px] text-destructive/72">
-              {run.error}
-            </span>
-          </>
-        ) : null}
-      </div>
-    </ActivityStep>
-  );
-}
-
-function alphaColor(color: string, percent: number): string {
-  if (/^#[0-9a-f]{6}$/i.test(color)) {
-    const alpha = Math.round((percent / 100) * 255)
-      .toString(16)
-      .padStart(2, "0");
-    return `${color}${alpha}`;
-  }
-  return `color-mix(in srgb, ${color} ${percent}%, transparent)`;
 }

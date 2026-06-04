@@ -51,8 +51,6 @@ export interface UIMessage {
   images?: UIImage[];
   /** Signed or local UI-renderable media attachments. */
   media?: UIMediaAttachment[];
-  /** Settings-managed MCP presets explicitly attached to this user turn. */
-  mcpPresets?: UIMcpPresetAttachment[];
   /** Assistant turn: accumulated model reasoning / thinking text. Built up
    * incrementally from ``reasoning_delta`` frames; finalized when
    * ``reasoning_end`` arrives. */
@@ -62,17 +60,6 @@ export interface UIMessage {
   reasoningStreaming?: boolean;
   /** End-to-end wall time for this assistant turn (persisted ``latency_ms`` / ``turn_end``). */
   latencyMs?: number;
-}
-
-export interface UIMcpPresetAttachment {
-  name: string;
-  display_name?: string;
-  category?: string;
-  transport?: string;
-  status?: string;
-  configured?: boolean;
-  logo_url?: string | null;
-  brand_color?: string | null;
 }
 
 /** Structured UI blob on ``progress`` WS frames; channels may add more ``kind`` values later. */
@@ -338,7 +325,6 @@ export interface SettingsPayload {
     allow_local_preview_access?: boolean;
     webui_default_access_mode: WebuiDefaultAccessMode;
     private_service_protection_enabled: boolean;
-    mcp_server_count: number;
     exec_enabled: boolean;
     exec_sandbox?: string | null;
     exec_path_append_set: boolean;
@@ -353,7 +339,7 @@ export interface AppPackageRef {
 }
 
 export interface AppCapability {
-  type: "cli" | "mcp" | "skill" | string;
+  type: "cli" | "skill" | string;
   entry_point?: string;
   package?: AppPackageRef;
   path?: string;
@@ -398,75 +384,6 @@ export interface AppManifest {
   install: AppPlan;
   remove: AppPlan;
   trust: AppTrust;
-}
-
-export interface McpPresetField {
-  name: string;
-  label: string;
-  secret: boolean;
-  required: boolean;
-  configured: boolean;
-  placeholder?: string;
-  env_var?: string | null;
-}
-
-export interface McpPresetInfo {
-  name: string;
-  display_name: string;
-  category: string;
-  description: string;
-  docs_url: string;
-  transport: "stdio" | "streamableHttp" | "sse" | string;
-  requires: string;
-  note: string;
-  install_supported: boolean;
-  installed: boolean;
-  configured: boolean;
-  available: boolean;
-  status: "not_installed" | "configured" | "missing_credentials" | "missing_dependency" | "coming_soon" | string;
-  logo_url?: string | null;
-  brand_color?: string | null;
-  required_fields: McpPresetField[];
-  connection_summary: string;
-  tool_count?: number;
-  tool_names?: string[];
-  checked_at?: string | null;
-  error?: string | null;
-  enabled_tools?: string[];
-  source?: "preset" | "custom" | string;
-  manifest?: AppManifest;
-}
-
-export interface McpPresetsPayload {
-  presets: McpPresetInfo[];
-  installed_count: number;
-  requires_restart?: boolean;
-  hot_reload?: {
-    ok: boolean;
-    message: string;
-    added?: string[];
-    changed?: string[];
-    removed?: string[];
-    retried?: string[];
-    connected?: string[];
-    configured?: string[];
-    failed?: string[];
-    tools_removed?: number;
-    requires_restart?: boolean;
-  };
-  last_action?: {
-    ok: boolean;
-    message: string;
-    installed?: boolean;
-    removed?: boolean;
-    managed_paths_removed?: string[];
-    verification?: string[];
-    verification_failed?: string[];
-    tool_count?: number;
-    tool_names?: string[];
-    checked_at?: string | null;
-    error?: string | null;
-  };
 }
 
 export interface SettingsUpdate {
@@ -625,17 +542,6 @@ export interface OutboundMedia {
   name?: string;
 }
 
-export interface OutboundMcpPresetMention {
-  name: string;
-  display_name?: string;
-  category?: string;
-  transport?: string;
-  status?: string;
-  configured?: boolean;
-  logo_url?: string | null;
-  brand_color?: string | null;
-}
-
 /** Response shape for ``GET .../webui-thread`` (server-built transcript replay). */
 export interface WebuiThreadPersistedPayload {
   schemaVersion: number;
@@ -654,7 +560,6 @@ export type Outbound =
       chat_id: string;
       content: string;
       media?: OutboundMedia[];
-      mcp_presets?: OutboundMcpPresetMention[];
       workspace_scope?: WorkspaceScopePayload;
       /** Marks messages sent by the embedded WebUI, without changing the
        * generic websocket protocol for other clients. */

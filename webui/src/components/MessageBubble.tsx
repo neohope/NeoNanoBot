@@ -17,8 +17,6 @@ import { cn } from "@/lib/utils";
 import { formatTurnLatency } from "@/lib/format";
 import { toMediaAttachment } from "@/lib/media";
 import type {
-  McpPresetInfo,
-  UIMcpPresetAttachment,
   UIImage,
   UIMediaAttachment,
   UIMessage,
@@ -28,7 +26,6 @@ interface MessageBubbleProps {
   message: UIMessage;
   /** When false, hide the assistant reply copy button (mid-turn text before more agent activity). Default true. */
   showAssistantCopyAction?: boolean;
-  mcpPresets?: McpPresetInfo[];
 }
 
 /**
@@ -43,16 +40,11 @@ interface MessageBubbleProps {
 export function MessageBubble({
   message,
   showAssistantCopyAction = true,
-  mcpPresets = [],
 }: MessageBubbleProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copyResetRef = useRef<number | null>(null);
   const baseAnim = "animate-in fade-in-0 slide-in-from-bottom-1 duration-300";
-  const mentionMcpPresets = useMemo(
-    () => mergeMcpMentionPresets(mcpPresets, message.mcpPresets),
-    [mcpPresets, message.mcpPresets],
-  );
 
   useEffect(() => {
     return () => {
@@ -96,19 +88,6 @@ export function MessageBubble({
         {hasImages ? <UserImages images={images} align="right" /> : null}
         {!hasImages && hasMedia ? (
           <MessageMedia media={media} align="right" />
-        ) : null}
-        {hasText ? (
-          <p
-            className={cn(
-              "ml-auto w-fit rounded-[18px] bg-secondary/70 px-4 py-2",
-              "text-left text-[16px]/[1.75] whitespace-pre-wrap break-words",
-            )}
-          >
-            <CliAppMentionText
-              text={message.content}
-              mcpPresets={mentionMcpPresets}
-            />
-          </p>
         ) : null}
       </div>
     );
@@ -175,39 +154,6 @@ export function MessageBubble({
       )}
     </div>
   );
-}
-
-function mergeMcpMentionPresets(
-  presets: McpPresetInfo[],
-  attachments: UIMcpPresetAttachment[] | undefined,
-): McpPresetInfo[] {
-  if (!attachments?.length) return presets;
-  const byName = new Map(presets.map((preset) => [preset.name.toLowerCase(), preset]));
-  for (const attachment of attachments) {
-    const name = attachment.name?.trim();
-    if (!name) continue;
-    const existing = byName.get(name.toLowerCase());
-    byName.set(name.toLowerCase(), {
-      name,
-      display_name: attachment.display_name || existing?.display_name || name,
-      category: attachment.category || existing?.category || "mcp",
-      description: existing?.description || "",
-      docs_url: existing?.docs_url || "",
-      transport: attachment.transport || existing?.transport || "mcp",
-      requires: existing?.requires || "",
-      note: existing?.note || "",
-      install_supported: existing?.install_supported ?? true,
-      installed: true,
-      configured: attachment.configured ?? existing?.configured ?? true,
-      available: existing?.available ?? true,
-      status: attachment.status || existing?.status || "configured",
-      logo_url: attachment.logo_url ?? existing?.logo_url ?? null,
-      brand_color: attachment.brand_color ?? existing?.brand_color ?? null,
-      required_fields: existing?.required_fields || [],
-      connection_summary: existing?.connection_summary || "",
-    });
-  }
-  return Array.from(byName.values());
 }
 
 function MessageMedia({

@@ -14,12 +14,10 @@ import {
 
 import enCommon from "./locales/en/common.json";
 import zhCNCommon from "./locales/zh-CN/common.json";
-import zhTWCommon from "./locales/zh-TW/common.json";
 
 export const resources = {
   en: { common: enCommon },
   "zh-CN": { common: zhCNCommon },
-  "zh-TW": { common: zhTWCommon },
 } as const;
 
 export function currentLocale(): SupportedLocale {

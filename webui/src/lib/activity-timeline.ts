@@ -1,9 +1,9 @@
 import { toMediaAttachment } from "@/lib/media";
 import type { ToolProgressEvent, UIMediaAttachment, UIMessage } from "@/lib/types";
 
-export type ActivityItemType = "reasoning" | "tool" | "cli" | "mcp" | "file_edit" | "media";
+export type ActivityItemType = "reasoning" | "tool" | "cli" | "file_edit" | "media";
 export type ActivityStepStatus = "pending" | "running" | "done" | "error";
-export type ActivityStepSource = "reasoning" | "tool" | "web" | "browser" | "shell" | "mcp" | "file" | "media";
+export type ActivityStepSource = "reasoning" | "tool" | "web" | "browser" | "shell" | "file" | "media";
 
 export interface ActivityItem {
   type: ActivityItemType;
@@ -168,14 +168,6 @@ function activityItemsForMessage(message: UIMessage): ActivityItem[] {
   if (message.fileEdits?.length) {
     items.push({ type: "file_edit", message });
   }
-  for (const event of message.toolEvents ?? []) {
-    const name = String(event.name ?? "").toLowerCase();
-    if (name === "mcp") {
-      items.push({ type: "mcp", message });
-    } else {
-      items.push({ type: "tool", message });
-    }
-  }
   if (items.length === 0 && (message.traces?.length || message.content.trim())) {
     items.push({ type: "tool", message });
   }
@@ -247,7 +239,6 @@ function activitySourceFromToolName(name: string): ActivityStepSource {
   if (compact.includes("browser") || compact.includes("screenshot")) return "browser";
   if (compact.includes("web") || compact.includes("search") || compact.includes("fetch") || compact.includes("read")) return "web";
   if (compact.includes("exec") || compact.includes("shell") || compact.includes("cli")) return "shell";
-  if (compact.startsWith("mcp_") || compact === "mcp") return "mcp";
   if (compact.includes("file") || compact.includes("patch")) return "file";
   if (compact.includes("image") || compact.includes("video") || compact.includes("media")) return "media";
   return "tool";

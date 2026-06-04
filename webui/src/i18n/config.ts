@@ -3,7 +3,6 @@ export const LOCALE_STORAGE_KEY = "neonanobot.locale";
 export const supportedLocales = [
   { code: "en", label: "English", nativeLabel: "English" },
   { code: "zh-CN", label: "Chinese (Simplified)", nativeLabel: "简体中文" },
-  { code: "zh-TW", label: "Chinese (Traditional)", nativeLabel: "繁體中文" },
 ] as const;
 
 export type SupportedLocale = (typeof supportedLocales)[number]["code"];
@@ -24,14 +23,6 @@ export function normalizeLocale(
   const lower = trimmed.toLowerCase();
   if (lower === "zh" || lower.startsWith("zh-cn") || lower.startsWith("zh-sg")) {
     return "zh-CN";
-  }
-  if (
-    lower.startsWith("zh-tw") ||
-    lower.startsWith("zh-hk") ||
-    lower.startsWith("zh-mo") ||
-    lower.startsWith("zh-hant")
-  ) {
-    return "zh-TW";
   }
 
   const base = lower.split("-")[0];
