@@ -5,7 +5,6 @@ import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { RenameChatDialog } from "@/components/RenameChatDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { SessionSearchDialog } from "@/components/SessionSearchDialog";
-import { SettingsView, type SettingsSectionKey } from "@/components/settings/SettingsView";
 import { ThreadShell } from "@/components/thread/ThreadShell";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
@@ -1194,24 +1193,6 @@ function Shell({
                 settingsSnapshot={settingsSnapshot}
               />
             </div>
-            {view !== "chat" && (
-              <div className="absolute inset-0 flex flex-col">
-                <SettingsView
-                  theme={theme}
-                  initialSection={settingsInitialSection}
-                  showSidebar={view === "settings"}
-                  onToggleTheme={toggle}
-                  onBackToChat={onBackToChat}
-                  onModelNameChange={onModelNameChange}
-                  onSettingsChange={setSettingsSnapshot}
-                  onWorkspaceSettingsChange={refreshWorkspaces}
-                  onLogout={onLogout}
-                  onRestart={onRestart}
-                  isRestarting={isRestarting}
-                  hostChromeInset={showHostChrome}
-                />
-              </div>
-            )}
           </main>
         </div>
 
