@@ -83,7 +83,6 @@ interface ThreadComposerProps {
   modelProviderLabel?: string | null;
   variant?: "thread" | "hero";
   slashCommands?: SlashCommand[];
-  mcpPresets?: McpPresetInfo[];
   onStop?: () => void;
   /** Unix seconds from server; turn elapsed timer above input while set. */
   runStartedAt?: number | null;
@@ -343,19 +342,6 @@ function buildGoalMarkdownBody(summary: string, objective: string): string {
   const o = objective.trim();
   if (s && o) return `${s}\n\n---\n\n${o}`;
   return o || s;
-}
-
-function mcpPresetMentionPayload(preset: McpPresetInfo): OutboundMcpPresetMention {
-  return {
-    name: preset.name,
-    display_name: preset.display_name,
-    category: preset.category,
-    transport: preset.transport,
-    status: preset.status,
-    configured: preset.configured,
-    logo_url: preset.logo_url ?? null,
-    brand_color: preset.brand_color ?? null,
-  };
 }
 
 function RunPulseIcon() {
@@ -823,21 +809,6 @@ export function ThreadComposer({
 
   const showSlashMenu = filteredSlashCommands.length > 0;
   const showAnyPalette = showSlashMenu;
-  const mentionSegments = useMemo(
-    () => splitCapabilityMentionSegments(value, mcpPresets),
-    [mcpPresets, value],
-  );
-  const hasMentionDecorations = mentionSegments.some(
-    (segment) => segment.kind === "mcp",
-  );
-  const activeMcpPresetMentions = useMemo(() => {
-    const seen = new Set<string>();
-    return mentionSegments.flatMap((segment) => {
-      if (segment.kind !== "mcp" || seen.has(segment.preset.name)) return [];
-      seen.add(segment.preset.name);
-      return [segment.preset];
-    });
-  }, [mentionSegments]);
   const [slashPaletteLayout, setSlashPaletteLayout] = useState<SlashPaletteLayout>({
     placement: "above",
     maxHeight: SLASH_PALETTE_MAX_HEIGHT_PX,
@@ -1064,13 +1035,7 @@ export function ThreadComposer({
             preview: { url: img.dataUrl, name: img.file.name },
           }))
         : undefined;
-    const attachedMcpPresets = activeMcpPresetMentions.map(mcpPresetMentionPayload);
-    const options: SendOptions | undefined =
-      attachedMcpPresets.length > 0
-        ? {
-            ...(attachedMcpPresets.length > 0 ? { mcpPresets: attachedMcpPresets } : {}),
-          }
-        : undefined;
+    const options: SendOptions | undefined = undefined;
     onSend(content, payload, options);
     setQueuedPrompts([]);
     // Bubble owns the data URL copy; safe to revoke every staged blob

@@ -171,7 +171,7 @@ export function AgentActivityCluster({
   const hasLiveEditingFiles = isTurnStreaming && hasEditingFiles;
   const singleFilePath = fileCount === 1 ? primaryFilePath : undefined;
   const singleFileTooltipPath = fileCount === 1 ? primaryFileTooltipPath : undefined;
-  const hasVisibleActivity = reasoningSteps > 0 || toolCalls > 0 || mcpCount > 0 || fileCount > 0;
+  const hasVisibleActivity = reasoningSteps > 0 || toolCalls > 0 || fileCount > 0;
   const hasOnlyFileActivity = fileCount > 0 && messages.every(messageHasOnlyFileActivity);
   const durationMs = activityDurationMs(messages, isTurnStreaming, now, turnLatencyMs);
   const activityDuration = formatActivityDuration(durationMs);
@@ -203,8 +203,6 @@ export function AgentActivityCluster({
 
   const summary = fileCount > 0
     ? fileActivitySummary
-    : mcpCount > 0
-      ? mcpActivitySummary
     : isTurnStreaming
       ? reasoningSteps > 0
         ? t("message.agentActivityLiveSummary", {
@@ -407,7 +405,6 @@ export function AgentActivityCluster({
                       key={m.id}
                       message={m}
                       active={isTurnStreaming}
-                      mcpPresetsByName={mcpPresetsByName}
                     />
                   );
                 }
@@ -556,17 +553,13 @@ function ActivityTraceList({
 function ActivityTraceTimeline({
   message,
   active,
-  mcpPresetsByName,
 }: {
   message: UIMessage;
   active: boolean;
-  mcpPresetsByName: Map<string, McpPresetInfo>;
 }) {
   const lines = traceLines(message);
-  const mcpRunsByLine = mcpRunMapByTraceLine(message);
   const evidenceByLine = toolEvidenceByTraceLine(message);
   const trailingEvidence = activityEvidenceFromMessageMedia(message);
-  const renderedRunKeys = new Set<string>();
   const items: ReactNode[] = [];
   let normalLines: string[] = [];
 
@@ -583,47 +576,11 @@ function ActivityTraceTimeline({
     normalLines = [];
   };
 
-  lines.forEach((line, index) => {
-    const mcpRun = mcpRunsByLine.get(line) ?? parseMcpRunTrace(line);
-    if (mcpRun) {
-      flushNormalLines(String(index));
-      renderedRunKeys.add(mcpRun.key);
-      items.push(
-        <McpRunGroup
-          key={`${message.id}:mcp:${mcpRun.key}:${index}`}
-          runs={[mcpRun]}
-          active={active}
-          mcpPresetsByName={mcpPresetsByName}
-        />,
-      );
-      const evidence = evidenceByLine.get(line) ?? [];
-      if (evidence.length) {
-        items.push(
-          <ActivityEvidenceList
-            key={`${message.id}:mcp-evidence:${mcpRun.key}:${index}`}
-            evidence={evidence}
-          />,
-        );
-      }
-      return;
-    }
-
+  lines.forEach((line) => {
     normalLines.push(line);
   });
 
   flushNormalLines("tail");
-
-  for (const run of mcpRunsByLine.values()) {
-    if (renderedRunKeys.has(run.key)) continue;
-    items.push(
-      <McpRunGroup
-        key={`${message.id}:mcp:${run.key}:event`}
-        runs={[run]}
-        active={active}
-        mcpPresetsByName={mcpPresetsByName}
-      />,
-    );
-  }
 
   if (trailingEvidence.length) {
     items.push(
@@ -723,7 +680,6 @@ function describeActivityGroup(
   if (names.some((name) => /browser|screenshot/.test(name))) return { title: "Browser", icon: FileImage };
   if (names.some((name) => /web|search|fetch|read|open/.test(name))) return { title: "Web", icon: Search };
   if (names.some((name) => /exec|shell|terminal|bash/.test(name))) return { title: "Shell", icon: Terminal };
-  if (names.some((name) => /^mcp_|mcp/.test(name))) return { title: "MCP", icon: Server };
   if (message.fileEdits?.length) return { title: "Files", icon: Layers };
   if (evidence.length) return { title: "Media", icon: FileImage };
   return { title: "Working", icon: Layers };
@@ -988,206 +944,11 @@ function formatTraceUrl(url: URL): string {
 function previewTraceDetail(args: string, fallback: string): string {
   const compactArgs = args.trim();
   if (!compactArgs) return fallback;
-  try {
-    const parsed = JSON.parse(compactArgs) as unknown;
-    const preview = previewMcpArgs(parsed);
-    if (preview) return preview;
-  } catch {
-    // Keep the original trace text for non-JSON progress hints.
-  }
   return compactArgs.replace(/^["']|["']$/g, "");
-}
-
-const MCP_RUN_STATUS_RANK: Record<McpRunStatus, number> = { running: 1, done: 2, error: 3 };
-const MCP_TOOL_NAME_RE = /^mcp_([a-z0-9_-]+?)_(.+)$/i;
-
-function isMcpRunTraceLine(line: string): boolean {
-  return MCP_TOOL_NAME_RE.test(line.trim().split("(", 1)[0] ?? "");
 }
 
 function isFileEditTraceLine(line: string): boolean {
   return /^(write_file|edit_file|apply_patch)\(/.test(line.trim());
-}
-
-function parseToolEventArguments(event: ToolProgressEvent): unknown {
-  const fnArgs = (event as { function?: { arguments?: unknown } }).function?.arguments;
-  const raw = fnArgs ?? event.arguments;
-  if (typeof raw !== "string") return raw ?? {};
-  if (!raw.trim()) return {};
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return { args: [raw] };
-  }
-}
-
-function cliRunStatusFromPhase(phase: unknown): CliRunStatus {
-  if (phase === "error") return "error";
-  if (phase === "end") return "done";
-  return "running";
-}
-
-function cliRunError(event: ToolProgressEvent): string | undefined {
-  const error = event.error;
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object") return JSON.stringify(error);
-  return undefined;
-}
-
-function toolEventName(event: ToolProgressEvent): string {
-  return typeof (event as { function?: { name?: unknown } }).function?.name === "string"
-    ? String((event as { function?: { name?: unknown } }).function?.name)
-    : typeof event.name === "string"
-      ? event.name
-      : "";
-}
-
-function titleFromPresetName(name: string): string {
-  return name
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ") || name;
-}
-
-function previewScalar(value: unknown): string | null {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return null;
-}
-
-function previewMcpArgs(argsObject: unknown): string {
-  if (!argsObject || typeof argsObject !== "object" || Array.isArray(argsObject)) {
-    return previewScalar(argsObject) ?? "";
-  }
-  const record = argsObject as Record<string, unknown>;
-  for (const key of ["url", "query", "q", "path", "name", "id", "title", "message", "text"]) {
-    const preview = previewScalar(record[key]);
-    if (preview) return `${key}: ${preview}`;
-  }
-  const entries = Object.entries(record)
-    .filter(([, value]) => previewScalar(value) !== null)
-    .slice(0, 2)
-    .map(([key, value]) => `${key}: ${previewScalar(value)}`);
-  return entries.join(" · ");
-}
-
-function mcpRunFromToolName(
-  toolName: string,
-  argsObject: unknown,
-  options: { key: string; status: McpRunStatus; error?: string },
-): McpRunSummary | null {
-  const match = MCP_TOOL_NAME_RE.exec(toolName);
-  if (!match) return null;
-  const presetName = match[1].toLowerCase();
-  return {
-    key: options.key,
-    presetName,
-    displayName: titleFromPresetName(presetName),
-    toolName: match[2],
-    argsPreview: previewMcpArgs(argsObject),
-    status: options.status,
-    error: options.error,
-  };
-}
-
-function parseMcpRunTrace(line: string, status: McpRunStatus = "running"): McpRunSummary | null {
-  const match = /^([a-z0-9_-]+)\((.*)\)$/i.exec(line.trim());
-  if (!match || !MCP_TOOL_NAME_RE.test(match[1])) return null;
-  const argsText = match[2].trim();
-  let argsObject: unknown = {};
-  if (argsText) {
-    try {
-      argsObject = JSON.parse(argsText);
-    } catch {
-      argsObject = argsText;
-    }
-  }
-  return mcpRunFromToolName(match[1], argsObject, { key: line, status });
-}
-
-function mcpRunFromEvent(event: ToolProgressEvent): McpRunSummary | null {
-  const name = toolEventName(event);
-  if (!MCP_TOOL_NAME_RE.test(name)) return null;
-  const argsObject = parseToolEventArguments(event);
-  const key = event.call_id ? `call:${event.call_id}` : `${name}:${JSON.stringify(argsObject)}`;
-  return mcpRunFromToolName(name, argsObject, {
-    key,
-    status: cliRunStatusFromPhase(event.phase),
-    error: cliRunError(event),
-  });
-}
-
-function mcpRunMapByTraceLine(message: UIMessage): Map<string, McpRunSummary> {
-  const runsByLine = new Map<string, McpRunSummary>();
-  for (const event of message.toolEvents ?? []) {
-    const run = mcpRunFromEvent(event);
-    if (!run) continue;
-    const line = formatToolCallTrace(event);
-    if (!line) continue;
-    runsByLine.set(line, mergeMcpRun(runsByLine.get(line), run));
-  }
-  return runsByLine;
-}
-
-function mergeMcpRun(existing: McpRunSummary | undefined, incoming: McpRunSummary): McpRunSummary {
-  if (!existing) return incoming;
-  return MCP_RUN_STATUS_RANK[incoming.status] >= MCP_RUN_STATUS_RANK[existing.status]
-    ? { ...existing, ...incoming }
-    : existing;
-}
-
-function collectMcpRuns(messages: UIMessage[]): McpRunSummary[] {
-  const runsByKey = new Map<string, McpRunSummary>();
-  for (const message of messages) {
-    if (message.kind !== "trace") continue;
-    let hasStructuredMcpRun = false;
-    for (const event of message.toolEvents ?? []) {
-      const run = mcpRunFromEvent(event);
-      if (!run) continue;
-      hasStructuredMcpRun = true;
-      runsByKey.set(run.key, mergeMcpRun(runsByKey.get(run.key), run));
-    }
-    if (hasStructuredMcpRun) continue;
-    for (const line of traceLines(message)) {
-      const run = parseMcpRunTrace(line);
-      if (!run || runsByKey.has(run.key)) continue;
-      runsByKey.set(run.key, run);
-    }
-  }
-  return [...runsByKey.values()];
-}
-
-function mcpActivitySummaryKey(status: McpRunStatus | undefined, active: boolean): string {
-  if (status === "error") return "message.mcpActivityFailedOne";
-  return active && status === "running" ? "message.mcpActivityRunningOne" : "message.mcpActivityRanOne";
-}
-
-function mcpActivitySummaryDefault(status: McpRunStatus | undefined, active: boolean): string {
-  if (status === "error") return "Failed {{name}}";
-  return `${active && status === "running" ? "Using" : "Used"} {{name}}`;
-}
-
-function mcpActivityManySummaryKey(runs: McpRunSummary[], active: boolean): string {
-  if (runs.some((run) => run.status === "error")) return "message.mcpActivityFailedMany";
-  return active && runs.some((run) => run.status === "running")
-    ? "message.mcpActivityRunningMany"
-    : "message.mcpActivityRanMany";
-}
-
-function mcpActivityManySummaryDefault(runs: McpRunSummary[], active: boolean): string {
-  if (runs.some((run) => run.status === "error")) return "{{count}} MCP calls failed";
-  return `${active && runs.some((run) => run.status === "running") ? "Using" : "Used"} {{count}} MCP tools`;
-}
-
-function mcpRunLabelKey(run: McpRunSummary, active: boolean): string {
-  if (run.status === "error") return "message.mcpRunFailed";
-  return active && run.status === "running" ? "message.mcpRunRunning" : "message.mcpRunRan";
-}
-
-function mcpRunLabelDefault(run: McpRunSummary, active: boolean): string {
-  if (run.status === "error") return "Failed";
-  return active && run.status === "running" ? "Using" : "Used";
 }
 
 function fileActivityVerb(editing: boolean, failed: boolean, deleted: boolean): string {
