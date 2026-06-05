@@ -839,8 +839,6 @@ class AgentLoop:
 
             raw = msg.content.strip()
             effective_key = self._effective_session_key(msg)
-            if await agent_context.handle_runtime_control(self, msg, self.tools):
-                continue
             if self.commands.is_priority(raw):
                 await self._dispatch_command_inline(
                     msg, effective_key, raw,
