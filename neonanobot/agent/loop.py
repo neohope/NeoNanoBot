@@ -553,7 +553,7 @@ class AgentLoop:
         media_paths = [p for p in (msg.media or []) if isinstance(p, str) and p]
         has_text = isinstance(msg.content, str) and msg.content.strip()
         if has_text or media_paths:
-            extra: dict[str, Any] = ({"media": list(media_paths)} if media_paths else {}) | agent_context.session_extra(msg.metadata)
+            extra: dict[str, Any] = ({"media": list(media_paths)} if media_paths else {})
             extra.update(kwargs)
             text = msg.content if isinstance(msg.content, str) else ""
             session.add_message("user", text, **extra)
