@@ -171,8 +171,7 @@ class ContextBuilder:
         extra = [
             *goal_state_runtime_lines(session_metadata),
         ]
-        if runtime_state is not None and inbound_message is not None:
-            extra.extend(runtime_lines(runtime_state, inbound_message, root, skip=skip_runtime_lines))
+
         if current_runtime_lines:
             extra.extend(line for line in current_runtime_lines if line)
         runtime_ctx = self._build_runtime_context(
