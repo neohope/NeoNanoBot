@@ -573,7 +573,7 @@ class AgentLoop:
         scope = self.workspace_scopes.for_message(msg, session.metadata)
         return self.context.build_messages(
             history=history,
-            current_message="",
+            current_message= msg.content,
             media=msg.media if msg.media else None,
             channel=msg.channel,
             chat_id=self._runtime_chat_id(msg),
