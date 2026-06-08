@@ -25,13 +25,12 @@ import { ClientProvider, useClient } from "@/providers/ClientProvider";
 import type {
   ChatSummary,
   RuntimeSurface,
-  SettingsPayload,
   WorkspaceScopePayload,
   WorkspacesPayload,
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { fetchSettings, fetchWorkspaces } from "@/lib/api";
+import { fetchWorkspaces } from "@/lib/api";
 import {
   createRuntimeHost,
   toRuntimeSurface,
@@ -441,7 +440,6 @@ function Shell({
   const [runningChatIds, setRunningChatIds] = useState<Set<string>>(() => new Set());
   const [completedChatIds, setCompletedChatIds] = useState<Set<string>>(readCompletedRunChatIds);
   const [workspaces, setWorkspaces] = useState<WorkspacesPayload | null>(null);
-  const [settingsSnapshot, setSettingsSnapshot] = useState<SettingsPayload | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [draftWorkspaceScope, setDraftWorkspaceScope] =
     useState<WorkspaceScopePayload | null>(null);
@@ -449,20 +447,6 @@ function Shell({
     useState<Record<string, WorkspaceScopePayload>>({});
   const runningChatIdsRef = useRef<Set<string>>(new Set());
   const activeChatIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchSettings(token)
-      .then((payload) => {
-        if (!cancelled) setSettingsSnapshot(payload);
-      })
-      .catch(() => {
-        if (!cancelled) setSettingsSnapshot(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
 
   useEffect(() => {
     try {
@@ -993,9 +977,7 @@ function Shell({
     archivedCount: sidebarState.archived_keys.length,
     defaultWorkspacePath: workspaces?.default_scope.project_path ?? null,
   };
-  const effectiveRuntimeSurface =
-    settingsSnapshot?.surface ?? settingsSnapshot?.runtime_surface ?? runtimeSurface;
-  const isNativeHostSetupSurface = effectiveRuntimeSurface === "native";
+  const isNativeHostSetupSurface = runtimeSurface === "native";
   const showHostChrome = isNativeHostSetupSurface;
   const showMainSidebar = true;
 
@@ -1114,7 +1096,6 @@ function Shell({
                 workspaceScopeDisabled={activeChatRunning}
                 workspaceError={workspaceError}
                 onWorkspaceScopeChange={applyWorkspaceScope}
-                settingsSnapshot={settingsSnapshot}
               />
             </div>
           </main>

@@ -7,11 +7,10 @@ import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
 import { useNanobotStream, type SendImage, type SendOptions } from "@/hooks/useNanobotStream";
 import { useSessionHistory } from "@/hooks/useSessions";
-import { fetchSettings, listSlashCommands } from "@/lib/api";
+import { listSlashCommands } from "@/lib/api";
 import { inferProviderFromModelName, providerDisplayLabel } from "@/lib/provider-brand";
 import type {
   ChatSummary,
-  SettingsPayload,
   SlashCommand,
   UIMessage,
   WorkspaceScopePayload,
@@ -58,7 +57,6 @@ interface ThreadShellProps {
   workspaceScopeDisabled?: boolean;
   workspaceError?: string | null;
   onWorkspaceScopeChange?: (scope: WorkspaceScopePayload) => void;
-  settingsSnapshot?: SettingsPayload | null;
 }
 
 function toModelBadgeLabel(modelName: string | null): string | null {
@@ -75,32 +73,13 @@ interface ModelBadgeInfo {
   providerLabel: string | null;
 }
 
-function activeModelPreset(settings: SettingsPayload | null): SettingsPayload["model_presets"][number] | null {
-  if (!settings) return null;
-  const configured = settings.agent.model_preset || "default";
-  return (
-    settings.model_presets.find((preset) => preset.name === configured)
-    ?? settings.model_presets.find((preset) => preset.active)
-    ?? null
-  );
-}
-
-function resolvedModelProvider(settings: SettingsPayload | null, modelName: string | null): string | null {
-  const preset = activeModelPreset(settings);
-  const rawProvider = preset?.provider || settings?.agent.provider || null;
-  if (rawProvider === "auto") {
-    return settings?.agent.resolved_provider || inferProviderFromModelName(modelName) || null;
-  }
-  return rawProvider || inferProviderFromModelName(modelName);
-}
-
-function toModelBadgeInfo(modelName: string | null, settings: SettingsPayload | null): ModelBadgeInfo {
-  const label = toModelBadgeLabel(modelName || settings?.agent.model || null);
-  const provider = resolvedModelProvider(settings, modelName || settings?.agent.model || null);
+function toModelBadgeInfo(modelName: string | null): ModelBadgeInfo {
+  const label = toModelBadgeLabel(modelName);
+  const provider = inferProviderFromModelName(modelName);
   return {
     label,
     provider,
-    providerLabel: provider ? providerDisplayLabel(settings?.providers ?? [], provider) : null,
+    providerLabel: provider ? providerDisplayLabel([], provider) : null,
   };
 }
 
@@ -139,7 +118,6 @@ export function ThreadShell({
   workspaceScopeDisabled = false,
   workspaceError = null,
   onWorkspaceScopeChange,
-  settingsSnapshot = null,
 }: ThreadShellProps) {
   const { t } = useTranslation();
   const chatId = session?.chatId ?? null;
@@ -154,7 +132,6 @@ export function ThreadShell({
   const { client, modelName, token } = useClient();
   const [booting, setBooting] = useState(false);
   const [slashCommands, setSlashCommands] = useState<SlashCommand[]>([]);
-  const [settings, setSettings] = useState<SettingsPayload | null>(settingsSnapshot);
   const [heroGreetingKey, setHeroGreetingKey] = useState(randomHeroGreetingKey);
   const [scrollToBottomSignal, setScrollToBottomSignal] = useState(0);
   const pendingFirstRef = useRef<PendingFirstMessage | null>(null);
@@ -195,8 +172,8 @@ export function ThreadShell({
   const showHeroComposer = messages.length === 0 && !loading;
   const wasShowingHeroComposerRef = useRef(showHeroComposer);
   const modelBadge = useMemo(
-    () => toModelBadgeInfo(modelName, settings),
-    [modelName, settings],
+    () => toModelBadgeInfo(modelName),
+    [modelName],
   );
   useEffect(() => {
     if (showHeroComposer && !wasShowingHeroComposerRef.current) {
@@ -215,28 +192,6 @@ export function ThreadShell({
     },
     [workspaceScope],
   );
-
-  const refreshModelSettings = useCallback(async () => {
-    try {
-      setSettings(await fetchSettings(token));
-    } catch {
-      if (!settingsSnapshot) setSettings(null);
-    }
-  }, [settingsSnapshot, token]);
-
-  useEffect(() => {
-    if (settingsSnapshot) {
-      setSettings(settingsSnapshot);
-      return;
-    }
-    void refreshModelSettings();
-  }, [refreshModelSettings, settingsSnapshot]);
-
-  useEffect(() => {
-    return client.onRuntimeModelUpdate(() => {
-      void refreshModelSettings();
-    });
-  }, [client, refreshModelSettings]);
 
   useEffect(() => {
     if (!chatId || loading) return;
