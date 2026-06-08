@@ -1,15 +1,7 @@
 import type {
   ChatSummary,
-  ModelConfigurationCreate,
-  ModelConfigurationUpdate,
-  NetworkSafetySettingsUpdate,
-  ProviderModelsPayload,
-  ProviderSettingsUpdate,
-  SettingsPayload,
-  SettingsUpdate,
   SidebarStatePayload,
   SlashCommand,
-  WebSearchSettingsUpdate,
   WorkspacesPayload,
   WebuiThreadPersistedPayload,
   WorkspaceScopePayload,
@@ -118,31 +110,11 @@ export async function deleteSession(
   return body.deleted;
 }
 
-export async function fetchSettings(
-  token: string,
-  base: string = "",
-): Promise<SettingsPayload> {
-  return request<SettingsPayload>(`${base}/api/settings`, token);
-}
-
 export async function fetchWorkspaces(
   token: string,
   base: string = "",
 ): Promise<WorkspacesPayload> {
   return request<WorkspacesPayload>(`${base}/api/workspaces`, token);
-}
-
-export async function fetchProviderModels(
-  token: string,
-  provider: string,
-  base: string = "",
-): Promise<ProviderModelsPayload> {
-  const query = new URLSearchParams();
-  query.set("provider", provider);
-  return request<ProviderModelsPayload>(
-    `${base}/api/settings/provider-models?${query}`,
-    token,
-  );
 }
 
 export async function listSlashCommands(
@@ -188,110 +160,3 @@ export async function updateSidebarState(
   );
 }
 
-export async function updateSettings(
-  token: string,
-  update: SettingsUpdate,
-  base: string = "",
-): Promise<SettingsPayload> {
-  const query = new URLSearchParams();
-  if (update.modelPreset !== undefined) {
-    query.set("model_preset", update.modelPreset ?? "default");
-  }
-  if (update.model !== undefined) query.set("model", update.model);
-  if (update.provider !== undefined) query.set("provider", update.provider);
-  if (update.contextWindowTokens !== undefined) {
-    query.set("context_window_tokens", String(update.contextWindowTokens));
-  }
-  if (update.timezone !== undefined) query.set("timezone", update.timezone);
-  if (update.botName !== undefined) query.set("bot_name", update.botName);
-  if (update.botIcon !== undefined) query.set("bot_icon", update.botIcon);
-  if (update.toolHintMaxLength !== undefined) {
-    query.set("tool_hint_max_length", String(update.toolHintMaxLength));
-  }
-  return request<SettingsPayload>(`${base}/api/settings/update?${query}`, token);
-}
-
-export async function createModelConfiguration(
-  token: string,
-  configuration: ModelConfigurationCreate,
-  base: string = "",
-): Promise<SettingsPayload> {
-  const query = new URLSearchParams();
-  if (configuration.name !== undefined) query.set("name", configuration.name);
-  query.set("label", configuration.label);
-  query.set("provider", configuration.provider);
-  query.set("model", configuration.model);
-  return request<SettingsPayload>(
-    `${base}/api/settings/model-configurations/create?${query}`,
-    token,
-  );
-}
-
-export async function updateModelConfiguration(
-  token: string,
-  configuration: ModelConfigurationUpdate,
-  base: string = "",
-): Promise<SettingsPayload> {
-  const query = new URLSearchParams();
-  query.set("name", configuration.name);
-  if (configuration.label !== undefined) query.set("label", configuration.label);
-  if (configuration.provider !== undefined) query.set("provider", configuration.provider);
-  if (configuration.model !== undefined) query.set("model", configuration.model);
-  if (configuration.contextWindowTokens !== undefined) {
-    query.set("context_window_tokens", String(configuration.contextWindowTokens));
-  }
-  return request<SettingsPayload>(
-    `${base}/api/settings/model-configurations/update?${query}`,
-    token,
-  );
-}
-
-export async function updateProviderSettings(
-  token: string,
-  update: ProviderSettingsUpdate,
-  base: string = "",
-): Promise<SettingsPayload> {
-  const query = new URLSearchParams();
-  query.set("provider", update.provider);
-  if (update.apiKey !== undefined) query.set("api_key", update.apiKey);
-  if (update.apiBase !== undefined) query.set("api_base", update.apiBase);
-  if (update.apiType !== undefined) query.set("api_type", update.apiType);
-  return request<SettingsPayload>(
-    `${base}/api/settings/provider/update?${query}`,
-    token,
-  );
-}
-
-export async function updateWebSearchSettings(
-  token: string,
-  update: WebSearchSettingsUpdate,
-  base: string = "",
-): Promise<SettingsPayload> {
-  const query = new URLSearchParams();
-  query.set("provider", update.provider);
-  if (update.apiKey !== undefined) query.set("api_key", update.apiKey);
-  if (update.baseUrl !== undefined) query.set("base_url", update.baseUrl);
-  if (update.maxResults !== undefined) query.set("max_results", String(update.maxResults));
-  if (update.timeout !== undefined) query.set("timeout", String(update.timeout));
-  if (update.useJinaReader !== undefined) {
-    query.set("use_jina_reader", String(update.useJinaReader));
-  }
-  return request<SettingsPayload>(
-    `${base}/api/settings/web-search/update?${query}`,
-    token,
-  );
-}
-
-export async function updateNetworkSafetySettings(
-  token: string,
-  update: NetworkSafetySettingsUpdate,
-  base: string = "",
-): Promise<SettingsPayload> {
-  const query = new URLSearchParams();
-  query.set("webui_allow_local_service_access", String(update.webuiAllowLocalServiceAccess));
-  query.set("webui_default_access_mode", update.webuiDefaultAccessMode);
-  return request<SettingsPayload>(
-    `${base}/api/settings/network-safety/update?${query}`,
-    token,
-  );
-}

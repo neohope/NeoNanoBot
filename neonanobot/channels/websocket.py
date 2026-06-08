@@ -44,13 +44,12 @@ from neonanobot.utils.media_decode import (
     save_base64_data_url,
 )
 from neonanobot.utils.subagent_channel_display import scrub_subagent_messages_for_channel
-from neonanobot.webui.settings_api import runtime_capabilities
 from neonanobot.webui.media_api import (
     serve_signed_media,
     sign_media_path,
     sign_or_stage_media_path,
 )
-from neonanobot.webui.settings_routes import WebUISettingsRouter
+from neonanobot.webui.runtime_metadata import runtime_capabilities
 from neonanobot.webui.sidebar_state import (
     read_webui_sidebar_state,
     write_webui_sidebar_state,
@@ -523,16 +522,6 @@ class WebSocketChannel(BaseChannel):
             self._runtime_surface,
             runtime_capabilities_overrides,
         )
-        self._settings_routes = WebUISettingsRouter(
-            bus=self.bus,
-            logger=self.logger,
-            check_api_token=self._check_api_token,
-            parse_query=_parse_query,
-            json_response=_http_json_response,
-            error_response=_http_error,
-            runtime_surface=self._runtime_surface,
-            runtime_capabilities=self._runtime_capabilities,
-        )
         self._stream_text_buffers: dict[tuple[str, str], list[str]] = {}
         # Process-local secret used to HMAC-sign media URLs. The signed URL is
         # the capability — anyone who holds a valid URL can fetch that one
@@ -714,9 +703,6 @@ class WebSocketChannel(BaseChannel):
         got: str,
     ) -> Any | None:
         """Route REST-ish WebUI requests served beside the WebSocket endpoint."""
-        response = await self._dispatch_settings_api_route(request, got)
-        if response is not None:
-            return response
         response = self._dispatch_session_api_route(request, got)
         if response is not None:
             return response
@@ -748,13 +734,6 @@ class WebSocketChannel(BaseChannel):
             return self._handle_webui_sidebar_state_update(request)
 
         return None
-
-    async def _dispatch_settings_api_route(
-        self,
-        request: WsRequest,
-        got: str,
-    ) -> Response | None:
-        return await self._settings_routes.dispatch(request, got)
 
     def _dispatch_session_api_route(
         self,

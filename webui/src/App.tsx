@@ -14,7 +14,6 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import { ThemeProvider, useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import {
-  clearSavedSecret,
   deriveWsUrl,
   fetchBootstrap,
   loadSavedSecret,
@@ -26,13 +25,12 @@ import { ClientProvider, useClient } from "@/providers/ClientProvider";
 import type {
   ChatSummary,
   RuntimeSurface,
-  SettingsPayload,
   WorkspaceScopePayload,
   WorkspacesPayload,
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { fetchSettings, fetchWorkspaces } from "@/lib/api";
+import { fetchWorkspaces } from "@/lib/api";
 import {
   createRuntimeHost,
   toRuntimeSurface,
@@ -59,7 +57,6 @@ const SIDEBAR_WIDTH = 272;
 const SIDEBAR_RAIL_WIDTH = 56;
 const TOKEN_REFRESH_MARGIN_MS = 30_000;
 const TOKEN_REFRESH_MIN_DELAY_MS = 5_000;
-type ShellView = "chat" | "settings" | "apps";
 
 function bootstrapTokenExpiresAt(expiresInSeconds: number): number {
   return Date.now() + Math.max(0, expiresInSeconds) * 1000;
@@ -394,14 +391,6 @@ export default function App() {
     );
   };
 
-  const handleLogout = () => {
-    if (state.status === "ready") {
-      state.client.close();
-    }
-    clearSavedSecret();
-    setState({ status: "auth" });
-  };
-
   return (
     <ClientProvider
       client={state.client}
@@ -411,7 +400,6 @@ export default function App() {
       <Shell
         runtimeSurface={state.runtimeSurface}
         onModelNameChange={handleModelNameChange}
-        onLogout={handleLogout}
       />
     </ClientProvider>
   );
@@ -420,11 +408,9 @@ export default function App() {
 function Shell({
   runtimeSurface,
   onModelNameChange,
-  onLogout,
 }: {
   runtimeSurface: RuntimeSurface;
   onModelNameChange: (modelName: string | null) => void;
-  onLogout: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const { client, token } = useClient();
@@ -433,8 +419,6 @@ function Shell({
   const { state: sidebarState, update: updateSidebarState } =
     useSidebarState(sessions, !loading);
   const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [view, setView] = useState<ShellView>("chat");
-  const [settingsInitialSection, setSettingsInitialSection] = useState<SettingsSectionKey>("overview");
   const [hostSidebarOpen, setHostSidebarOpen] =
     useState<boolean>(readSidebarOpen);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -453,11 +437,9 @@ function Shell({
   } | null>(null);
   const restartSawDisconnectRef = useRef(false);
   const [restartToast, setRestartToast] = useState<string | null>(null);
-  const [isRestarting, setIsRestarting] = useState(false);
   const [runningChatIds, setRunningChatIds] = useState<Set<string>>(() => new Set());
   const [completedChatIds, setCompletedChatIds] = useState<Set<string>>(readCompletedRunChatIds);
   const [workspaces, setWorkspaces] = useState<WorkspacesPayload | null>(null);
-  const [settingsSnapshot, setSettingsSnapshot] = useState<SettingsPayload | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [draftWorkspaceScope, setDraftWorkspaceScope] =
     useState<WorkspaceScopePayload | null>(null);
@@ -465,20 +447,6 @@ function Shell({
     useState<Record<string, WorkspaceScopePayload>>({});
   const runningChatIdsRef = useRef<Set<string>>(new Set());
   const activeChatIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchSettings(token)
-      .then((payload) => {
-        if (!cancelled) setSettingsSnapshot(payload);
-      })
-      .catch(() => {
-        if (!cancelled) setSettingsSnapshot(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
 
   useEffect(() => {
     try {
@@ -653,7 +621,6 @@ function Shell({
       const scope = workspaceScope ?? activeWorkspaceScope;
       const chatId = await createChat(scope);
       setActiveKey(`websocket:${chatId}`);
-      setView("chat");
       setMobileSidebarOpen(false);
       if (scope) {
         setWorkspaceOverrides((current) => ({
@@ -675,7 +642,6 @@ function Shell({
     setActiveKey(null);
     setDraftWorkspaceScope(null);
     setWorkspaceError(null);
-    setView("chat");
     setMobileSidebarOpen(false);
   }, []);
 
@@ -695,7 +661,6 @@ function Shell({
         restrict_to_workspace: base.access_mode === "restricted",
       }));
       setWorkspaceError(null);
-      setView("chat");
       setMobileSidebarOpen(false);
     },
     [activeWorkspaceScope, onNewChat, workspaces?.default_scope],
@@ -720,7 +685,6 @@ function Shell({
       }
       setWorkspaceError(null);
       setActiveKey(key);
-      setView("chat");
       setMobileSidebarOpen(false);
     },
     [sessions],
@@ -888,43 +852,6 @@ function Shell({
     [onSelectChat],
   );
 
-  const onOpenSettings = useCallback((section: SettingsSectionKey = "overview") => {
-    setSessionSearchOpen(false);
-    setSettingsInitialSection(section);
-    setView("settings");
-    setMobileSidebarOpen(false);
-  }, []);
-
-  const onOpenApps = useCallback(() => {
-    setSessionSearchOpen(false);
-    setSettingsInitialSection("apps");
-    setView("apps");
-    setMobileSidebarOpen(false);
-  }, []);
-
-  const onBackToChat = useCallback(() => {
-    setView("chat");
-    setMobileSidebarOpen(false);
-    setActiveKey((current) => {
-      if (!current) return null;
-      if (sessions.some((session) => session.key === current)) return current;
-      return sessions[0]?.key ?? null;
-    });
-  }, [sessions]);
-
-  const onRestart = useCallback(() => {
-    const chatId = activeSession?.chatId ?? client.defaultChatId;
-    if (!chatId) return;
-    restartSawDisconnectRef.current = false;
-    setIsRestarting(true);
-    try {
-      window.localStorage.setItem(RESTART_STARTED_KEY, String(Date.now()));
-    } catch {
-      // ignore storage errors
-    }
-    client.sendMessage(chatId, "/restart");
-  }, [activeSession?.chatId, client]);
-
   useEffect(() => {
     return client.onRuntimeModelUpdate((modelName) => {
       onModelNameChange(modelName);
@@ -985,7 +912,6 @@ function Shell({
       } catch {
         // ignore storage errors
       }
-      setIsRestarting(false);
       setRestartToast(t("app.restart.completed", { seconds: (elapsedMs / 1000).toFixed(1) }));
       window.setTimeout(() => setRestartToast(null), 3_500);
     });
@@ -1018,22 +944,10 @@ function Shell({
     : t("app.brand");
 
   useEffect(() => {
-    if (view === "settings") {
-      document.title = t("app.documentTitle.chat", {
-        title: t("settings.sidebar.title"),
-      });
-      return;
-    }
-    if (view === "apps") {
-      document.title = t("app.documentTitle.chat", {
-        title: t("settings.nav.apps", { defaultValue: "Apps" }),
-      });
-      return;
-    }
     document.title = activeSession
       ? t("app.documentTitle.chat", { title: headerTitle })
       : t("app.documentTitle.base");
-  }, [activeSession, headerTitle, i18n.resolvedLanguage, t, view]);
+  }, [activeSession, headerTitle, i18n.resolvedLanguage, t]);
 
   const sidebarProps = {
     sessions,
@@ -1049,10 +963,7 @@ function Shell({
     onToggleGroup,
     onRequestRenameProject,
     onNewChatInProject,
-    onOpenSettings,
-    onOpenApps,
     onOpenSearch: onOpenSessionSearch,
-    activeUtility: view === "apps" ? "apps" as const : null,
     onToggleArchived,
     pinnedKeys: sidebarState.pinned_keys,
     archivedKeys: sidebarState.archived_keys,
@@ -1066,11 +977,9 @@ function Shell({
     archivedCount: sidebarState.archived_keys.length,
     defaultWorkspacePath: workspaces?.default_scope.project_path ?? null,
   };
-  const effectiveRuntimeSurface =
-    settingsSnapshot?.surface ?? settingsSnapshot?.runtime_surface ?? runtimeSurface;
-  const isNativeHostSetupSurface = effectiveRuntimeSurface === "native";
+  const isNativeHostSetupSurface = runtimeSurface === "native";
   const showHostChrome = isNativeHostSetupSurface;
-  const showMainSidebar = view !== "settings";
+  const showMainSidebar = true;
 
   useEffect(() => {
     document.documentElement.classList.toggle("native-host", showHostChrome);
@@ -1167,10 +1076,7 @@ function Shell({
           )}
         >
             <div
-              className={cn(
-                "absolute inset-0 flex flex-col",
-                view !== "chat" && "invisible pointer-events-none",
-              )}
+              className="absolute inset-0 flex flex-col"
             >
               <ThreadShell
                 session={activeSession}
@@ -1190,7 +1096,6 @@ function Shell({
                 workspaceScopeDisabled={activeChatRunning}
                 workspaceError={workspaceError}
                 onWorkspaceScopeChange={applyWorkspaceScope}
-                settingsSnapshot={settingsSnapshot}
               />
             </div>
           </main>
