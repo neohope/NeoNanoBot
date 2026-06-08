@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  AlertCircle,
   CheckCircle2,
   ChevronRight,
   FileImage,
   Layers,
   Search,
-  Server,
   Terminal,
   Wrench,
   type LucideIcon,
@@ -28,7 +26,7 @@ import {
   isReasoningOnlyAssistant,
   type ActivityEvidence,
 } from "@/lib/activity-timeline";
-import { faviconUrls, logoFallbackUrls } from "@/lib/provider-brand";
+import { faviconUrls } from "@/lib/provider-brand";
 import { formatToolCallTrace } from "@/lib/tool-traces";
 import { cn } from "@/lib/utils";
 import type { ToolProgressEvent, UIFileEdit, UIMessage } from "@/lib/types";

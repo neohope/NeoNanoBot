@@ -14,7 +14,6 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import { ThemeProvider, useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import {
-  clearSavedSecret,
   deriveWsUrl,
   fetchBootstrap,
   loadSavedSecret,
@@ -59,7 +58,7 @@ const SIDEBAR_WIDTH = 272;
 const SIDEBAR_RAIL_WIDTH = 56;
 const TOKEN_REFRESH_MARGIN_MS = 30_000;
 const TOKEN_REFRESH_MIN_DELAY_MS = 5_000;
-type ShellView = "chat" | "settings" | "apps";
+type ShellView = "chat" | "apps";
 
 function bootstrapTokenExpiresAt(expiresInSeconds: number): number {
   return Date.now() + Math.max(0, expiresInSeconds) * 1000;
@@ -394,14 +393,6 @@ export default function App() {
     );
   };
 
-  const handleLogout = () => {
-    if (state.status === "ready") {
-      state.client.close();
-    }
-    clearSavedSecret();
-    setState({ status: "auth" });
-  };
-
   return (
     <ClientProvider
       client={state.client}
@@ -411,7 +402,6 @@ export default function App() {
       <Shell
         runtimeSurface={state.runtimeSurface}
         onModelNameChange={handleModelNameChange}
-        onLogout={handleLogout}
       />
     </ClientProvider>
   );
@@ -420,11 +410,9 @@ export default function App() {
 function Shell({
   runtimeSurface,
   onModelNameChange,
-  onLogout,
 }: {
   runtimeSurface: RuntimeSurface;
   onModelNameChange: (modelName: string | null) => void;
-  onLogout: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const { client, token } = useClient();
@@ -434,7 +422,6 @@ function Shell({
     useSidebarState(sessions, !loading);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [view, setView] = useState<ShellView>("chat");
-  const [settingsInitialSection, setSettingsInitialSection] = useState<SettingsSectionKey>("overview");
   const [hostSidebarOpen, setHostSidebarOpen] =
     useState<boolean>(readSidebarOpen);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -453,7 +440,6 @@ function Shell({
   } | null>(null);
   const restartSawDisconnectRef = useRef(false);
   const [restartToast, setRestartToast] = useState<string | null>(null);
-  const [isRestarting, setIsRestarting] = useState(false);
   const [runningChatIds, setRunningChatIds] = useState<Set<string>>(() => new Set());
   const [completedChatIds, setCompletedChatIds] = useState<Set<string>>(readCompletedRunChatIds);
   const [workspaces, setWorkspaces] = useState<WorkspacesPayload | null>(null);
@@ -888,42 +874,11 @@ function Shell({
     [onSelectChat],
   );
 
-  const onOpenSettings = useCallback((section: SettingsSectionKey = "overview") => {
-    setSessionSearchOpen(false);
-    setSettingsInitialSection(section);
-    setView("settings");
-    setMobileSidebarOpen(false);
-  }, []);
-
   const onOpenApps = useCallback(() => {
     setSessionSearchOpen(false);
-    setSettingsInitialSection("apps");
     setView("apps");
     setMobileSidebarOpen(false);
   }, []);
-
-  const onBackToChat = useCallback(() => {
-    setView("chat");
-    setMobileSidebarOpen(false);
-    setActiveKey((current) => {
-      if (!current) return null;
-      if (sessions.some((session) => session.key === current)) return current;
-      return sessions[0]?.key ?? null;
-    });
-  }, [sessions]);
-
-  const onRestart = useCallback(() => {
-    const chatId = activeSession?.chatId ?? client.defaultChatId;
-    if (!chatId) return;
-    restartSawDisconnectRef.current = false;
-    setIsRestarting(true);
-    try {
-      window.localStorage.setItem(RESTART_STARTED_KEY, String(Date.now()));
-    } catch {
-      // ignore storage errors
-    }
-    client.sendMessage(chatId, "/restart");
-  }, [activeSession?.chatId, client]);
 
   useEffect(() => {
     return client.onRuntimeModelUpdate((modelName) => {
@@ -985,7 +940,6 @@ function Shell({
       } catch {
         // ignore storage errors
       }
-      setIsRestarting(false);
       setRestartToast(t("app.restart.completed", { seconds: (elapsedMs / 1000).toFixed(1) }));
       window.setTimeout(() => setRestartToast(null), 3_500);
     });
@@ -1018,12 +972,6 @@ function Shell({
     : t("app.brand");
 
   useEffect(() => {
-    if (view === "settings") {
-      document.title = t("app.documentTitle.chat", {
-        title: t("settings.sidebar.title"),
-      });
-      return;
-    }
     if (view === "apps") {
       document.title = t("app.documentTitle.chat", {
         title: t("settings.nav.apps", { defaultValue: "Apps" }),
@@ -1049,7 +997,6 @@ function Shell({
     onToggleGroup,
     onRequestRenameProject,
     onNewChatInProject,
-    onOpenSettings,
     onOpenApps,
     onOpenSearch: onOpenSessionSearch,
     activeUtility: view === "apps" ? "apps" as const : null,
@@ -1070,7 +1017,7 @@ function Shell({
     settingsSnapshot?.surface ?? settingsSnapshot?.runtime_surface ?? runtimeSurface;
   const isNativeHostSetupSurface = effectiveRuntimeSurface === "native";
   const showHostChrome = isNativeHostSetupSurface;
-  const showMainSidebar = view !== "settings";
+  const showMainSidebar = true;
 
   useEffect(() => {
     document.documentElement.classList.toggle("native-host", showHostChrome);
