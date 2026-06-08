@@ -58,7 +58,6 @@ const SIDEBAR_WIDTH = 272;
 const SIDEBAR_RAIL_WIDTH = 56;
 const TOKEN_REFRESH_MARGIN_MS = 30_000;
 const TOKEN_REFRESH_MIN_DELAY_MS = 5_000;
-type ShellView = "chat" | "apps";
 
 function bootstrapTokenExpiresAt(expiresInSeconds: number): number {
   return Date.now() + Math.max(0, expiresInSeconds) * 1000;
@@ -421,7 +420,6 @@ function Shell({
   const { state: sidebarState, update: updateSidebarState } =
     useSidebarState(sessions, !loading);
   const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [view, setView] = useState<ShellView>("chat");
   const [hostSidebarOpen, setHostSidebarOpen] =
     useState<boolean>(readSidebarOpen);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -639,7 +637,6 @@ function Shell({
       const scope = workspaceScope ?? activeWorkspaceScope;
       const chatId = await createChat(scope);
       setActiveKey(`websocket:${chatId}`);
-      setView("chat");
       setMobileSidebarOpen(false);
       if (scope) {
         setWorkspaceOverrides((current) => ({
@@ -661,7 +658,6 @@ function Shell({
     setActiveKey(null);
     setDraftWorkspaceScope(null);
     setWorkspaceError(null);
-    setView("chat");
     setMobileSidebarOpen(false);
   }, []);
 
@@ -681,7 +677,6 @@ function Shell({
         restrict_to_workspace: base.access_mode === "restricted",
       }));
       setWorkspaceError(null);
-      setView("chat");
       setMobileSidebarOpen(false);
     },
     [activeWorkspaceScope, onNewChat, workspaces?.default_scope],
@@ -706,7 +701,6 @@ function Shell({
       }
       setWorkspaceError(null);
       setActiveKey(key);
-      setView("chat");
       setMobileSidebarOpen(false);
     },
     [sessions],
@@ -874,12 +868,6 @@ function Shell({
     [onSelectChat],
   );
 
-  const onOpenApps = useCallback(() => {
-    setSessionSearchOpen(false);
-    setView("apps");
-    setMobileSidebarOpen(false);
-  }, []);
-
   useEffect(() => {
     return client.onRuntimeModelUpdate((modelName) => {
       onModelNameChange(modelName);
@@ -972,16 +960,10 @@ function Shell({
     : t("app.brand");
 
   useEffect(() => {
-    if (view === "apps") {
-      document.title = t("app.documentTitle.chat", {
-        title: t("settings.nav.apps", { defaultValue: "Apps" }),
-      });
-      return;
-    }
     document.title = activeSession
       ? t("app.documentTitle.chat", { title: headerTitle })
       : t("app.documentTitle.base");
-  }, [activeSession, headerTitle, i18n.resolvedLanguage, t, view]);
+  }, [activeSession, headerTitle, i18n.resolvedLanguage, t]);
 
   const sidebarProps = {
     sessions,
@@ -997,9 +979,7 @@ function Shell({
     onToggleGroup,
     onRequestRenameProject,
     onNewChatInProject,
-    onOpenApps,
     onOpenSearch: onOpenSessionSearch,
-    activeUtility: view === "apps" ? "apps" as const : null,
     onToggleArchived,
     pinnedKeys: sidebarState.pinned_keys,
     archivedKeys: sidebarState.archived_keys,
@@ -1114,10 +1094,7 @@ function Shell({
           )}
         >
             <div
-              className={cn(
-                "absolute inset-0 flex flex-col",
-                view !== "chat" && "invisible pointer-events-none",
-              )}
+              className="absolute inset-0 flex flex-col"
             >
               <ThreadShell
                 session={activeSession}

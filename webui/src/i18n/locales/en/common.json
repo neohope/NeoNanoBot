@@ -53,8 +53,7 @@
     "language": {
       "label": "Language",
       "ariaLabel": "Change language"
-    },
-    "apps": "Apps"
+    }
   },
   "settings": {
     "backToChat": "Back to chat",
@@ -72,8 +71,7 @@
       "image": "Image",
       "browser": "Web",
       "runtime": "System",
-      "advanced": "Security",
-      "apps": "Apps"
+      "advanced": "Security"
     },
     "sections": {
       "interface": "Interface",
@@ -87,7 +85,6 @@
       "identity": "Identity",
       "webuiSafety": "Web safety",
       "capabilities": "Capabilities",
-      "apps": "Apps",
       "nativeHost": "Native host",
       "hostSafety": "App safety"
     },

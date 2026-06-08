@@ -49,7 +49,6 @@ _BROWSER_RESTART_BEHAVIOR_BY_SECTION = {
     "runtime": "engineRestart",
     "browser": "engineRestart",
     "image": "engineRestart",
-    "apps": "engineRestart",
     "advanced": "appRestart",
 }
 
@@ -58,7 +57,6 @@ _NATIVE_RESTART_BEHAVIOR_BY_SECTION = {
     "runtime": "engineRestart",
     "browser": "engineRestart",
     "image": "engineRestart",
-    "apps": "engineRestart",
 }
 
 _WEB_SEARCH_PROVIDER_OPTIONS: tuple[dict[str, str], ...] = (

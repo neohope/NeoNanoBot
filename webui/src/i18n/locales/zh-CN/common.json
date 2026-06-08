@@ -53,8 +53,7 @@
     "language": {
       "label": "语言",
       "ariaLabel": "切换语言"
-    },
-    "apps": "应用"
+    }
   },
   "settings": {
     "backToChat": "返回聊天",
@@ -72,8 +71,7 @@
       "image": "图片",
       "browser": "网页",
       "runtime": "系统",
-      "advanced": "安全",
-      "apps": "应用"
+      "advanced": "安全"
     },
     "sections": {
       "interface": "界面",
@@ -87,7 +85,6 @@
       "identity": "身份",
       "webuiSafety": "WebUI 安全",
       "capabilities": "能力",
-      "apps": "应用",
       "nativeHost": "原生宿主",
       "hostSafety": "应用安全"
     },
