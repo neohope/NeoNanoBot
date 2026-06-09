@@ -7,9 +7,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ChatList } from "@/components/ChatList";
-import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import type {
   ChatSummary,
   SidebarViewState,
@@ -165,15 +163,6 @@ export function Sidebar(props: SidebarProps) {
             }
           />
         )}
-      </div>
-      <Separator className="bg-sidebar-border/50" />
-      <div
-        className={cn(
-          "flex items-center gap-1 px-2.5 py-2.5 text-xs",
-          collapsed && "w-14 flex-col px-0",
-        )}
-      >
-        <ConnectionBadge />
       </div>
     </nav>
   );

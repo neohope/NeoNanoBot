@@ -321,14 +321,6 @@
     "cancel": "Cancel",
     "confirm": "Delete"
   },
-  "connection": {
-    "idle": "Idle",
-    "connecting": "Connecting…",
-    "open": "Connected",
-    "reconnecting": "Reconnecting…",
-    "closed": "Disconnected",
-    "error": "Connection error"
-  },
   "thread": {
     "loadingConversation": "Loading conversation…",
     "empty": {
