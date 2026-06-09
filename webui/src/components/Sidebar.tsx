@@ -2,7 +2,6 @@ import { useState, type ReactNode } from "react";
 import {
   Archive,
   Menu,
-  Search,
   SquarePen,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -30,7 +29,6 @@ interface SidebarProps {
   onToggleGroup: (groupId: string) => void;
   onRequestRenameProject: (projectKey: string, label: string) => void;
   onNewChatInProject: (projectPath: string, projectName: string) => void;
-  onOpenSearch: () => void;
   onToggleArchived: () => void;
   onCollapse: () => void;
   onExpand?: () => void;
@@ -119,12 +117,6 @@ export function Sidebar(props: SidebarProps) {
           label={t("sidebar.newChat")}
           onClick={props.onNewChat}
           icon={<SquarePen className="h-4 w-4" />}
-        />
-        <SidebarActionButton
-          collapsed={collapsed}
-          label={t("sidebar.searchAria")}
-          onClick={props.onOpenSearch}
-          icon={<Search className="h-4 w-4" />}
         />
         {props.archivedCount ? (
           <SidebarActionButton

@@ -44,11 +44,6 @@
     "navigation": "侧边栏导航",
     "collapse": "收起侧边栏",
     "newChat": "新建对话",
-    "searchAria": "搜索",
-    "searchPlaceholder": "搜索",
-    "searchResults": "搜索结果",
-    "noSearchResults": "没有匹配的会话。",
-    "recent": "最近对话",
     "settings": "设置",
     "language": {
       "label": "语言",
