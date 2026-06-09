@@ -73,10 +73,5 @@ export default defineConfig(({ mode }) => {
         "/auth": { target, changeOrigin: true },
       },
     },
-    test: {
-      environment: "happy-dom",
-      globals: true,
-      setupFiles: ["./src/tests/setup.ts"],
-    },
   };
 });

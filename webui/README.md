@@ -103,13 +103,6 @@ bun run build          # writes to ../neonanobot/web/dist
 
 The gateway picks up the new bundle on the next restart.
 
-## Test
-
-```bash
-cd webui
-bun run test
-```
-
 ## Acknowledgements
 
 - [`agent-chat-ui`](https://github.com/langchain-ai/agent-chat-ui) for UI and

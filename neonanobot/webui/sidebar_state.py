@@ -23,9 +23,6 @@ _MAX_LIST_ITEMS = 2_000
 _MAX_MAP_ITEMS = 2_000
 _MAX_KEY_LEN = 512
 _MAX_TITLE_LEN = 160
-_MAX_TAG_LEN = 40
-_ALLOWED_DENSITIES = {"comfortable", "compact"}
-_ALLOWED_SORTS = {"updated_desc", "created_desc", "title_asc"}
 
 
 def webui_sidebar_state_path() -> Path:
@@ -39,14 +36,9 @@ def default_webui_sidebar_state() -> dict[str, Any]:
         "archived_keys": [],
         "title_overrides": {},
         "project_name_overrides": {},
-        "tags_by_key": {},
         "collapsed_groups": {},
         "view": {
-            "density": "comfortable",
-            "show_previews": False,
-            "show_timestamps": False,
             "show_archived": False,
-            "sort": "updated_desc",
         },
         "updated_at": None,
     }
@@ -100,32 +92,12 @@ def _clean_title_overrides(value: Any) -> dict[str, str]:
     return out
 
 
-def _clean_tags_by_key(value: Any) -> dict[str, list[str]]:
-    if not isinstance(value, dict):
-        return {}
-    out: dict[str, list[str]] = {}
-    for key, raw_tags in list(value.items())[:_MAX_MAP_ITEMS]:
-        cleaned_key = _clean_string(key)
-        if cleaned_key is None:
-            continue
-        tags = _clean_string_list(raw_tags, max_len=_MAX_TAG_LEN)[:12]
-        if tags:
-            out[cleaned_key] = tags
-    return out
-
-
 def _clean_view(value: Any) -> dict[str, Any]:
     default = default_webui_sidebar_state()["view"]
     if not isinstance(value, dict):
         return dict(default)
-    density = value.get("density")
-    sort = value.get("sort")
     return {
-        "density": density if density in _ALLOWED_DENSITIES else default["density"],
-        "show_previews": bool(value.get("show_previews", default["show_previews"])),
-        "show_timestamps": bool(value.get("show_timestamps", default["show_timestamps"])),
         "show_archived": bool(value.get("show_archived", default["show_archived"])),
-        "sort": sort if sort in _ALLOWED_SORTS else default["sort"],
     }
 
 
@@ -140,7 +112,6 @@ def normalize_webui_sidebar_state(raw: Any) -> dict[str, Any]:
     state["project_name_overrides"] = _clean_title_overrides(
         raw.get("project_name_overrides")
     )
-    state["tags_by_key"] = _clean_tags_by_key(raw.get("tags_by_key"))
     state["collapsed_groups"] = _clean_bool_map(raw.get("collapsed_groups"))
     state["view"] = _clean_view(raw.get("view"))
     updated_at = raw.get("updated_at")

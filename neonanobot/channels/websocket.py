@@ -43,7 +43,6 @@ from neonanobot.utils.media_decode import (
     FileSizeExceeded,
     save_base64_data_url,
 )
-from neonanobot.utils.subagent_channel_display import scrub_subagent_messages_for_channel
 from neonanobot.webui.media_api import (
     serve_signed_media,
     sign_media_path,
@@ -740,10 +739,6 @@ class WebSocketChannel(BaseChannel):
         request: WsRequest,
         got: str,
     ) -> Response | None:
-        m = re.match(r"^/api/sessions/([^/]+)/messages$", got)
-        if m:
-            return self._handle_session_messages(request, m.group(1))
-
         m = re.match(r"^/api/sessions/([^/]+)/webui-thread$", got)
         if m:
             return self._handle_webui_thread_get(request, m.group(1))
@@ -931,31 +926,6 @@ class WebSocketChannel(BaseChannel):
         """True when *key* is a ``websocket:…`` session exposed on this HTTP surface."""
         return key.startswith("websocket:")
 
-    def _handle_session_messages(self, request: WsRequest, key: str) -> Response:
-        if not self._check_api_token(request):
-            return _http_error(401, "Unauthorized")
-        if self._session_manager is None:
-            return _http_error(503, "session manager unavailable")
-        decoded_key = _decode_api_key(key)
-        if decoded_key is None:
-            return _http_error(400, "invalid session key")
-        # Only ``websocket:…`` sessions are listed/served here — same boundary as
-        # ``/api/sessions``. Block handcrafted URLs from probing CLI / Slack / etc.
-        if not self._is_websocket_channel_session_key(decoded_key):
-            return _http_error(404, "session not found")
-        data = self._session_manager.read_session_file(decoded_key)
-        if data is None:
-            return _http_error(404, "session not found")
-        messages = data.get("messages")
-        if isinstance(messages, list):
-            scrub_subagent_messages_for_channel(messages)
-        # Decorate persisted user messages with signed media URLs so the
-        # client can render previews. The raw on-disk ``media`` paths are
-        # stripped on the way out — they leak server filesystem layout and
-        # the client never needs them once it has the signed fetch URL.
-        self._augment_media_urls(data)
-        return _http_json_response(data)
-
     def _handle_webui_thread_get(self, request: WsRequest, key: str) -> Response:
         if not self._check_api_token(request):
             return _http_error(401, "Unauthorized")
@@ -1032,37 +1002,6 @@ class WebSocketChannel(BaseChannel):
             is_dm,
         )
 
-    def _augment_media_urls(self, payload: dict[str, Any]) -> None:
-        """Mutate *payload* in place: each message's ``media`` path list is
-        replaced by a parallel ``media_urls`` list of signed fetch URLs.
-
-        Messages without media or with non-string path entries are left
-        untouched. Paths that no longer live inside ``media_dir`` (e.g. the
-        file was deleted, or the dir was relocated) are silently skipped;
-        the client falls back to the historical-replay placeholder tile.
-        """
-        messages = payload.get("messages")
-        if not isinstance(messages, list):
-            return
-        for msg in messages:
-            if not isinstance(msg, dict):
-                continue
-            media = msg.get("media")
-            if not isinstance(media, list) or not media:
-                continue
-            urls: list[dict[str, str]] = []
-            for entry in media:
-                if not isinstance(entry, str) or not entry:
-                    continue
-                signed = self._sign_media_path(Path(entry))
-                if signed is None:
-                    continue
-                urls.append({"url": signed, "name": Path(entry).name})
-            if urls:
-                msg["media_urls"] = urls
-            # Always drop the raw paths from the wire payload.
-            msg.pop("media", None)
-
     def _sign_media_path(self, abs_path: Path) -> str | None:
         """Return a ``/api/media/<sig>/<payload>`` URL for *abs_path*, or
         ``None`` when the path does not resolve inside the media root.
@@ -1125,8 +1064,8 @@ class WebSocketChannel(BaseChannel):
         decoded_key = _decode_api_key(key)
         if decoded_key is None:
             return _http_error(400, "invalid session key")
-        # Same boundary as ``_handle_session_messages``: mutations apply only to
-        # websocket-channel sessions; deletion unlinks local JSONL — keep scope narrow.
+        # Mutations apply only to websocket-channel sessions; deletion unlinks
+        # local JSONL — keep scope narrow.
         if not self._is_websocket_channel_session_key(decoded_key):
             return _http_error(404, "session not found")
         deleted = self._session_manager.delete_session(decoded_key)
