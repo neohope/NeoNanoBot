@@ -13,14 +13,9 @@ export const DEFAULT_SIDEBAR_STATE: SidebarStatePayload = {
   archived_keys: [],
   title_overrides: {},
   project_name_overrides: {},
-  tags_by_key: {},
   collapsed_groups: {},
   view: {
-    density: "comfortable",
-    show_previews: false,
-    show_timestamps: false,
     show_archived: false,
-    sort: "updated_desc",
   },
   updated_at: null,
 };
@@ -52,18 +47,6 @@ function stringMap(value: unknown): Record<string, string> {
   return out;
 }
 
-function tagsMap(value: unknown): Record<string, string[]> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const out: Record<string, string[]> = {};
-  for (const [key, raw] of Object.entries(value)) {
-    const cleanedKey = key.trim();
-    if (!cleanedKey) continue;
-    const tags = uniqueStrings(raw).slice(0, 12);
-    if (tags.length) out[cleanedKey] = tags;
-  }
-  return out;
-}
-
 function boolMap(value: unknown): Record<string, boolean> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, boolean> = {};
@@ -82,24 +65,15 @@ export function normalizeSidebarState(raw: unknown): SidebarStatePayload {
   const view = value.view && typeof value.view === "object"
     ? value.view
     : DEFAULT_SIDEBAR_STATE.view;
-  const density = view.density === "compact" ? "compact" : "comfortable";
-  const sort = ["updated_desc", "created_desc", "title_asc"].includes(view.sort)
-    ? view.sort
-    : "updated_desc";
   return {
     schema_version: 1,
     pinned_keys: uniqueStrings(value.pinned_keys),
     archived_keys: uniqueStrings(value.archived_keys),
     title_overrides: stringMap(value.title_overrides),
     project_name_overrides: stringMap(value.project_name_overrides),
-    tags_by_key: tagsMap(value.tags_by_key),
     collapsed_groups: boolMap(value.collapsed_groups),
     view: {
-      density,
-      show_previews: Boolean(view.show_previews),
-      show_timestamps: Boolean(view.show_timestamps),
       show_archived: Boolean(view.show_archived),
-      sort,
     },
     updated_at: typeof value.updated_at === "string" ? value.updated_at : null,
   };
@@ -123,7 +97,6 @@ function pruneMissingSessions(
     pinned_keys: filterKeys(state.pinned_keys),
     archived_keys: filterKeys(state.archived_keys),
     title_overrides: filterMap(state.title_overrides),
-    tags_by_key: filterMap(state.tags_by_key),
   };
 }
 

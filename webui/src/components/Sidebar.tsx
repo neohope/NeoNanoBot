@@ -8,10 +8,7 @@ import { useTranslation } from "react-i18next";
 
 import { ChatList } from "@/components/ChatList";
 import { Button } from "@/components/ui/button";
-import type {
-  ChatSummary,
-  SidebarViewState,
-} from "@/lib/types";
+import type { ChatSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -39,7 +36,6 @@ interface SidebarProps {
   collapsedGroups?: Record<string, boolean>;
   runningChatIds?: string[];
   completedChatIds?: string[];
-  viewState?: SidebarViewState;
   showArchived?: boolean;
   archivedCount?: number;
   defaultWorkspacePath?: string | null;
@@ -152,10 +148,6 @@ export function Sidebar(props: SidebarProps) {
             collapsedGroups={props.collapsedGroups}
             runningChatIds={props.runningChatIds}
             completedChatIds={props.completedChatIds}
-            density={props.viewState?.density}
-            showPreviews={props.viewState?.show_previews}
-            showTimestamps={props.viewState?.show_timestamps}
-            sort={props.viewState?.sort}
             showArchived={props.showArchived}
             defaultWorkspacePath={props.defaultWorkspacePath}
             actionMenuPortalContainer={
