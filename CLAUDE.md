@@ -13,11 +13,10 @@ neonanobot is a lightweight, open-source AI agent framework written in Python wi
 pytest tests/test_openai_api.py::test_function -v
 ruff check neonanobot/
 
-# WebUI: dev server (proxies API/WS to gateway :4321), build, test
+# WebUI: dev server (proxies API/WS to gateway :4321), build
 # Build outputs to ../neonanobot/web/dist (bundled into the Python wheel)
 cd webui && bun run dev      # or NANOBOT_API_URL=... bun run dev
 cd webui && bun run build
-cd webui && bun run test
 
 # Gateway
 neonanobot gateway
