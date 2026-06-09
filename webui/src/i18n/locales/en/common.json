@@ -44,11 +44,6 @@
     "navigation": "Sidebar navigation",
     "collapse": "Collapse sidebar",
     "newChat": "New chat",
-    "searchAria": "Search",
-    "searchPlaceholder": "Search",
-    "searchResults": "Results",
-    "noSearchResults": "No matching chats.",
-    "recent": "Recent",
     "settings": "Settings",
     "language": {
       "label": "Language",

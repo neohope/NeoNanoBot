@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { RenameChatDialog } from "@/components/RenameChatDialog";
 import { Sidebar } from "@/components/Sidebar";
-import { SessionSearchDialog } from "@/components/SessionSearchDialog";
 import { ThreadShell } from "@/components/thread/ThreadShell";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
@@ -422,7 +421,6 @@ function Shell({
   const [hostSidebarOpen, setHostSidebarOpen] =
     useState<boolean>(readSidebarOpen);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [sessionSearchOpen, setSessionSearchOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
     key: string;
     label: string;
@@ -824,34 +822,6 @@ function Shell({
     }));
   }, [updateSidebarState]);
 
-  const onOpenSessionSearch = useCallback(() => {
-    setMobileSidebarOpen(false);
-    setSessionSearchOpen(true);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.defaultPrevented) return;
-      const plainCommandK =
-        (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey;
-      if (!plainCommandK) return;
-      if (event.key.toLowerCase() !== "k") return;
-      event.preventDefault();
-      onOpenSessionSearch();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onOpenSessionSearch]);
-
-  const onSelectSearchResult = useCallback(
-    (key: string) => {
-      setSessionSearchOpen(false);
-      onSelectChat(key);
-    },
-    [onSelectChat],
-  );
-
   useEffect(() => {
     return client.onRuntimeModelUpdate((modelName) => {
       onModelNameChange(modelName);
@@ -963,7 +933,6 @@ function Shell({
     onToggleGroup,
     onRequestRenameProject,
     onNewChatInProject,
-    onOpenSearch: onOpenSessionSearch,
     onToggleArchived,
     pinnedKeys: sidebarState.pinned_keys,
     archivedKeys: sidebarState.archived_keys,
@@ -1060,15 +1029,6 @@ function Shell({
             </Sheet>
           ) : null}
 
-          <SessionSearchDialog
-            open={sessionSearchOpen}
-            onOpenChange={setSessionSearchOpen}
-            sessions={sessions}
-            activeKey={activeKey}
-            loading={loading}
-            titleOverrides={sidebarState.title_overrides}
-            onSelect={onSelectSearchResult}
-          />
         <main
           className={cn(
             "relative flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-background",
