@@ -1,5 +1,5 @@
 import { deriveTitle } from "@/lib/format";
-import type { ChatSummary, SidebarSortMode } from "@/lib/types";
+import type { ChatSummary } from "@/lib/types";
 import { normalizeWorkspacePath, projectNameFromPath, sameWorkspacePath } from "@/lib/workspace";
 
 export const COLLAPSED_CHATS_VISIBLE_COUNT = 8;
@@ -31,7 +31,6 @@ export interface ChatGroupingOptions {
   titleOverrides: Record<string, string>;
   projectNameOverrides: Record<string, string>;
   showArchived: boolean;
-  sort: SidebarSortMode;
   defaultWorkspacePath?: string | null;
 }
 
@@ -53,7 +52,6 @@ export function groupSessions(
 
   const pinnedSessions: ChatSummary[] = [];
   const archivedSessions: ChatSummary[] = [];
-  const normalSessions: ChatSummary[] = [];
 
   for (const session of sessions) {
     if (archived.has(session.key)) {
@@ -62,10 +60,6 @@ export function groupSessions(
     }
     if (pinned.has(session.key)) {
       pinnedSessions.push(session);
-      continue;
-    }
-    if (options.sort === "title_asc") {
-      normalSessions.push(session);
       continue;
     }
     const timestamp = Date.parse(session.updatedAt ?? session.createdAt ?? "");
@@ -85,30 +79,17 @@ export function groupSessions(
       label,
       sessions: sortSessions(
         buckets.get(label) ?? [],
-        options.sort,
         options.titleOverrides,
       ),
     }))
     .filter((group) => group.sessions.length > 0);
 
-  if (options.sort === "title_asc" && normalSessions.length) {
-    groups.push({
-      id: "date:all",
-      label: labels.all,
-      sessions: sortSessions(
-        normalSessions,
-        options.sort,
-        options.titleOverrides,
-      ),
-    });
-  }
   if (pinnedSessions.length) {
     groups.unshift({
       id: "pinned",
       label: labels.pinned,
       sessions: sortSessions(
         pinnedSessions,
-        options.sort,
         options.titleOverrides,
       ),
     });
@@ -119,7 +100,6 @@ export function groupSessions(
       label: labels.archived,
       sessions: sortSessions(
         archivedSessions,
-        options.sort,
         options.titleOverrides,
       ),
     });
@@ -274,7 +254,6 @@ function groupSessionsByProject(
     updatedAt: bucket.updatedAt,
     sessions: sortProjectSessions(
       bucket.sessions,
-      options.sort,
       options.titleOverrides,
       pinned,
       archived,
@@ -296,7 +275,6 @@ function groupSessionsByProject(
       label: labels.all,
       sessions: sortProjectSessions(
         conversations,
-        options.sort,
         options.titleOverrides,
         pinned,
         archived,
@@ -309,12 +287,11 @@ function groupSessionsByProject(
 
 function sortProjectSessions(
   sessions: ChatSummary[],
-  sort: SidebarSortMode,
   titleOverrides: Record<string, string>,
   pinned: Set<string>,
   archived: Set<string>,
 ): ChatSummary[] {
-  return sortSessions(sessions, sort, titleOverrides).sort((a, b) => {
+  return sortSessions(sessions, titleOverrides).sort((a, b) => {
     const pinOrder = Number(pinned.has(b.key)) - Number(pinned.has(a.key));
     if (pinOrder !== 0) return pinOrder;
     const archiveOrder = Number(archived.has(a.key)) - Number(archived.has(b.key));
@@ -325,23 +302,18 @@ function sortProjectSessions(
 
 function sortSessions(
   sessions: ChatSummary[],
-  sort: SidebarSortMode,
   titleOverrides: Record<string, string>,
 ): ChatSummary[] {
   const copy = [...sessions];
   copy.sort((a, b) => {
-    if (sort === "title_asc") {
-      const titleOrder = titleForSort(a, titleOverrides).localeCompare(
-        titleForSort(b, titleOverrides),
-        "en",
-        { numeric: true, sensitivity: "base" },
-      );
-      if (titleOrder !== 0) return titleOrder;
-      return sessionTime(b, "updatedAt") - sessionTime(a, "updatedAt");
-    }
-    const aTime = sessionTime(a, sort === "created_desc" ? "createdAt" : "updatedAt");
-    const bTime = sessionTime(b, sort === "created_desc" ? "createdAt" : "updatedAt");
-    return bTime - aTime;
+    const aTime = sessionTime(a, "updatedAt");
+    const bTime = sessionTime(b, "updatedAt");
+    if (bTime !== aTime) return bTime - aTime;
+    return titleForSort(a, titleOverrides).localeCompare(
+      titleForSort(b, titleOverrides),
+      "en",
+      { numeric: true, sensitivity: "base" },
+    );
   });
   return copy;
 }

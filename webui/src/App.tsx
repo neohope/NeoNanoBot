@@ -941,7 +941,6 @@ function Shell({
     collapsedGroups: sidebarState.collapsed_groups,
     runningChatIds: runningChatIdList,
     completedChatIds: completedChatIdList,
-    viewState: sidebarState.view,
     showArchived: sidebarState.view.show_archived,
     archivedCount: sidebarState.archived_keys.length,
     defaultWorkspacePath: workspaces?.default_scope.project_path ?? null,

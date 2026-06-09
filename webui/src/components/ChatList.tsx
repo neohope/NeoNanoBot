@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { deriveTitle, relativeTime } from "@/lib/format";
+import { deriveTitle } from "@/lib/format";
 import {
   COLLAPSED_CHATS_VISIBLE_COUNT,
   displayTitle,
@@ -36,7 +36,7 @@ import {
   type ChatGroupLabels,
 } from "@/lib/chat-groups";
 import { cn } from "@/lib/utils";
-import type { ChatSummary, SidebarDensity, SidebarSortMode } from "@/lib/types";
+import type { ChatSummary } from "@/lib/types";
 
 const INITIAL_VISIBLE_SESSIONS = 160;
 const VISIBLE_SESSIONS_INCREMENT = 160;
@@ -59,10 +59,6 @@ interface ChatListProps {
   collapsedGroups?: Record<string, boolean>;
   runningChatIds?: string[];
   completedChatIds?: string[];
-  density?: SidebarDensity;
-  showPreviews?: boolean;
-  showTimestamps?: boolean;
-  sort?: SidebarSortMode;
   showArchived?: boolean;
   defaultWorkspacePath?: string | null;
   actionMenuPortalContainer?: HTMLElement | null;
@@ -88,10 +84,6 @@ export const ChatList = memo(function ChatList({
   collapsedGroups = {},
   runningChatIds = [],
   completedChatIds = [],
-  density = "comfortable",
-  showPreviews = false,
-  showTimestamps = false,
-  sort = "updated_desc",
   showArchived = false,
   defaultWorkspacePath,
   actionMenuPortalContainer,
@@ -117,7 +109,6 @@ export const ChatList = memo(function ChatList({
       titleOverrides,
       projectNameOverrides,
       showArchived,
-      sort,
       defaultWorkspacePath,
     }),
     [
@@ -126,7 +117,6 @@ export const ChatList = memo(function ChatList({
       pinnedKeys,
       sessions,
       showArchived,
-      sort,
       titleOverrides,
       projectNameOverrides,
       defaultWorkspacePath,
@@ -152,7 +142,7 @@ export const ChatList = memo(function ChatList({
 
   useEffect(() => {
     setVisibleLimit(INITIAL_VISIBLE_SESSIONS);
-  }, [showArchived, sort]);
+  }, [showArchived]);
 
   if (loading && sessions.length === 0) {
     return (
@@ -174,7 +164,6 @@ export const ChatList = memo(function ChatList({
   const archived = new Set(archivedKeys);
   const running = new Set(runningChatIds);
   const completed = new Set(completedChatIds);
-  const compact = density === "compact";
 
   return (
     <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-thin scrollbar-track-transparent">
@@ -215,7 +204,6 @@ export const ChatList = memo(function ChatList({
                       : undefined
                   }
                   actionMenuPortalContainer={actionMenuPortalContainer}
-                  updatedAt={showTimestamps ? group.updatedAt : null}
                 />
               ) : (
                 <ChatsGroupHeader label={group.label} />
@@ -235,11 +223,6 @@ export const ChatList = memo(function ChatList({
                       deriveTitle(s.preview, fallbackTitle);
                     const isPinned = pinned.has(s.key);
                     const isArchived = archived.has(s.key);
-                    const preview = s.preview.trim();
-                    const showPreview = showPreviews && preview && preview !== title;
-                    const timestamp = showTimestamps
-                      ? relativeTime(s.updatedAt ?? s.createdAt)
-                      : "";
                     const projectMode = group.kind === "project";
                     const activityState = running.has(s.chatId)
                       ? "running"
@@ -251,7 +234,7 @@ export const ChatList = memo(function ChatList({
                         <div
                           className={cn(
                             "group flex min-w-0 max-w-full items-center gap-2 rounded-xl px-2 text-[13px] transition-colors",
-                            compact ? "min-h-7" : "min-h-8",
+                            "min-h-8",
                             active
                               ? "bg-sidebar-accent/70 text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border)/0.28)]"
                               : "text-sidebar-foreground/82 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
@@ -262,8 +245,7 @@ export const ChatList = memo(function ChatList({
                             onClick={() => onSelect(s.key)}
                             title={tooltipTitle}
                             className={cn(
-                              "min-w-0 flex-1 overflow-hidden text-left",
-                              compact ? "py-1" : "py-1.5",
+                              "min-w-0 flex-1 overflow-hidden py-1.5 text-left",
                               projectMode && "pl-7",
                             )}
                           >
@@ -272,27 +254,12 @@ export const ChatList = memo(function ChatList({
                                 <span className="min-w-0 flex-1 truncate font-medium leading-5">
                                   {title}
                                 </span>
-                                {timestamp ? (
-                                  <span className="shrink-0 text-[11.5px] font-medium text-muted-foreground/58">
-                                    {timestamp}
-                                  </span>
-                                ) : null}
                               </span>
                             ) : (
                               <span className="block w-full truncate font-medium leading-5">
                                 {title}
                               </span>
                             )}
-                            {showPreview ? (
-                              <span className="block w-full truncate text-[11.5px] leading-4 text-muted-foreground/72">
-                                {preview}
-                              </span>
-                            ) : null}
-                            {timestamp && !projectMode ? (
-                              <span className="block w-full truncate text-[11px] leading-4 text-muted-foreground/58">
-                                {timestamp}
-                              </span>
-                            ) : null}
                           </button>
                           <SessionActivityIndicator state={activityState} />
                           <DropdownMenu modal={false}>
@@ -393,7 +360,6 @@ function ProjectGroupHeader({
   onRequestRename,
   onNewChat,
   actionMenuPortalContainer,
-  updatedAt,
 }: {
   label: string;
   path?: string;
@@ -402,7 +368,6 @@ function ProjectGroupHeader({
   onRequestRename?: () => void;
   onNewChat?: () => void;
   actionMenuPortalContainer?: HTMLElement | null;
-  updatedAt?: string | null;
 }) {
   const { t } = useTranslation();
 
@@ -420,11 +385,6 @@ function ProjectGroupHeader({
         <Folder className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{label}</span>
       </button>
-      {updatedAt ? (
-        <span className="shrink-0 text-[11px] text-muted-foreground/55">
-          {relativeTime(updatedAt)}
-        </span>
-      ) : null}
       {onRequestRename ? (
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger

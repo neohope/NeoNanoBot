@@ -148,15 +148,8 @@ export interface WorkspacesPayload {
   };
 }
 
-export type SidebarDensity = "comfortable" | "compact";
-export type SidebarSortMode = "updated_desc" | "created_desc" | "title_asc";
-
 export interface SidebarViewState {
-  density: SidebarDensity;
-  show_previews: boolean;
-  show_timestamps: boolean;
   show_archived: boolean;
-  sort: SidebarSortMode;
 }
 
 export interface SidebarStatePayload {
@@ -165,7 +158,6 @@ export interface SidebarStatePayload {
   archived_keys: string[];
   title_overrides: Record<string, string>;
   project_name_overrides: Record<string, string>;
-  tags_by_key: Record<string, string[]>;
   collapsed_groups: Record<string, boolean>;
   view: SidebarViewState;
   updated_at?: string | null;
