@@ -21,15 +21,6 @@ export function saveSecret(secret: string): void {
   }
 }
 
-/** Clear the saved bootstrap secret (sign out). */
-export function clearSavedSecret(): void {
-  try {
-    window.localStorage.removeItem(SECRET_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
-}
-
 /**
  * Fetch a short-lived token + the WebSocket path from the gateway's
  * ``/webui/bootstrap`` endpoint.
