@@ -1,9 +1,4 @@
-"""Shared helpers for decoding ``data:...;base64,...`` URLs to disk.
-
-Historically lived in ``neonanobot.api.server``; now shared by the WebSocket
-channel so the ``api`` + ``websocket`` ingress paths apply the same parsing,
-size guard, and filesystem layout.
-"""
+"""Helpers for decoding inbound ``data:...;base64,...`` media URLs to disk."""
 
 from __future__ import annotations
 
@@ -16,7 +11,6 @@ from pathlib import Path
 from neonanobot.utils.helpers import safe_filename
 
 DEFAULT_MAX_BYTES = 10 * 1024 * 1024
-MAX_FILE_SIZE = DEFAULT_MAX_BYTES
 
 _DATA_URL_RE = re.compile(r"^data:([^;]+);base64,(.+)$", re.DOTALL)
 

@@ -14,13 +14,6 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    optimizeDeps: {
-      // Radix dialog was introduced mid-session for the mobile sidebar sheet.
-      // When Vite re-optimizes it on a running dev server, the browser can race
-      // and request stale chunk paths from `.vite/deps`. Excluding it keeps dev
-      // reloads stable instead of rewriting those chunk filenames under us.
-      exclude: ["@radix-ui/react-dialog"],
-    },
     build: {
       outDir: path.resolve(__dirname, "../neonanobot/web/dist"),
       emptyOutDir: true,
