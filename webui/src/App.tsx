@@ -230,7 +230,7 @@ export default function App() {
       (async () => {
         setState({ status: "loading" });
         try {
-          const boot = await fetchBootstrap("", secret);
+          const boot = await fetchBootstrap(secret);
           if (cancelled) return;
           if (secret) saveSecret(secret);
           const url = deriveWsUrl(boot.ws_path, boot.token, boot.ws_url);
@@ -241,7 +241,7 @@ export default function App() {
             socketFactory: runtimeHost.socketFactory,
             onReauth: async () => {
               try {
-                const refreshed = await fetchBootstrap("", bootstrapSecretRef.current);
+                const refreshed = await fetchBootstrap(bootstrapSecretRef.current);
                 const refreshedUrl = deriveWsUrl(
                   refreshed.ws_path,
                   refreshed.token,
@@ -309,7 +309,7 @@ export default function App() {
     const client = state.client;
     const timer = window.setTimeout(async () => {
       try {
-        const boot = await fetchBootstrap("", bootstrapSecretRef.current);
+        const boot = await fetchBootstrap(bootstrapSecretRef.current);
         const url = deriveWsUrl(boot.ws_path, boot.token, boot.ws_url);
         const runtimeSurface = boot.runtime_surface
           ? toRuntimeSurface(boot.runtime_surface)

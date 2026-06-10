@@ -25,15 +25,12 @@ export function saveSecret(secret: string): void {
  * Fetch a short-lived token + the WebSocket path from the gateway's
  * ``/webui/bootstrap`` endpoint.
  */
-export async function fetchBootstrap(
-  baseUrl: string = "",
-  secret: string = "",
-): Promise<BootstrapResponse> {
+export async function fetchBootstrap(secret: string = ""): Promise<BootstrapResponse> {
   const headers: Record<string, string> = {};
   if (secret) {
     headers["X-neonanobot-Auth"] = secret;
   }
-  const res = await fetch(`${baseUrl}/webui/bootstrap`, {
+  const res = await fetch("/webui/bootstrap", {
     method: "GET",
     credentials: "same-origin",
     headers,
