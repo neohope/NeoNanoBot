@@ -66,6 +66,12 @@ class WebUIBuildHook(BuildHookInterface):
             )
             return
 
+        # 清理旧的 dist 目录，确保是全新构建
+        if dist_dir.is_dir():
+            self.app.display_info(f"[webui-build] cleaning old build at {dist_dir}")
+            shutil.rmtree(dist_dir)
+        dist_dir.mkdir(parents=True, exist_ok=True)
+
         runner = self._pick_runner()
         if runner is None:
             raise RuntimeError(
