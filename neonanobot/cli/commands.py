@@ -597,17 +597,6 @@ def _load_runtime_config(config: str | None = None, workspace: str | None = None
 
 
 
-def _migrate_cron_store(config: "Config") -> None:
-    """One-time migration: move legacy global cron store into the workspace."""
-    from neonanobot.config.paths import get_cron_dir
-
-    legacy_path = get_cron_dir() / "jobs.json"
-    new_path = config.workspace_path / "cron" / "jobs.json"
-    if legacy_path.is_file() and not new_path.exists():
-        new_path.parent.mkdir(parents=True, exist_ok=True)
-        import shutil
-
-        shutil.move(str(legacy_path), str(new_path))
 
 
 # ============================================================================
@@ -804,10 +793,6 @@ def _run_gateway(
         console.print(f"[red]Error: {exc}[/red]")
         raise typer.Exit(1) from exc
     session_manager = SessionManager(config.workspace_path)
-
-    # Preserve existing single-workspace installs, but keep custom workspaces clean.
-    if is_default_workspace(config.workspace_path):
-        _migrate_cron_store(config)
 
     # Create cron service with workspace-scoped store
     cron_store_path = config.workspace_path / "cron" / "jobs.json"
@@ -1212,10 +1197,6 @@ def agent(
     sync_workspace_templates(config.workspace_path)
 
     bus = MessageBus()
-
-    # Preserve existing single-workspace installs, but keep custom workspaces clean.
-    if is_default_workspace(config.workspace_path):
-        _migrate_cron_store(config)
 
     # Create cron service with workspace-scoped store
     cron_store_path = config.workspace_path / "cron" / "jobs.json"

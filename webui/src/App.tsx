@@ -1014,7 +1014,6 @@ function Shell({
               <SheetContent
                 side="left"
                 showCloseButton={false}
-                aria-describedby={undefined}
                 className="p-0 lg:hidden"
                 style={{ width: SIDEBAR_WIDTH, maxWidth: SIDEBAR_WIDTH }}
               >
