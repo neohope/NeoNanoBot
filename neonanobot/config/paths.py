@@ -38,10 +38,6 @@ def get_cron_dir() -> Path:
     return get_runtime_subdir("cron")
 
 
-def get_logs_dir() -> Path:
-    """Return the logs directory."""
-    return get_runtime_subdir("logs")
-
 
 def get_webui_dir() -> Path:
     """Return the directory for WebUI-only persisted display threads (JSON)."""
