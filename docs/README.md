@@ -12,13 +12,11 @@ Start here for setup, everyday usage, and deployment.
 |---|---|---|
 | Install and quick start | [`quick-start.md`](./quick-start.md) | Installation, onboarding, and first-run setup |
 | Chat apps | [`chat-apps.md`](./chat-apps.md) | Connect neonanobot to Feishu and more |
-| Agent social network | [`agent-social-network.md`](./agent-social-network.md) | Join external agent communities from neonanobot |
 | Configuration | [`configuration.md`](./configuration.md) | Providers, tools, channels, and runtime settings |
 | WebUI | [`../webui/README.md`](../webui/README.md) | Open the bundled browser UI; LAN access; Vite dev server for contributors |
 | Multiple instances | [`multiple-instances.md`](./multiple-instances.md) | Run isolated bots with separate configs and workspaces |
 | CLI reference | [`cli-reference.md`](./cli-reference.md) | Core CLI commands and common entrypoints |
 | In-chat commands | [`chat-commands.md`](./chat-commands.md) | Slash commands and periodic task behavior |
-| OpenAI-compatible API | [`openai-api.md`](./openai-api.md) | Local API endpoints, request format, and file uploads |
 | Deployment | [`deployment.md`](./deployment.md) | Linux service, and macOS LaunchAgent setup |
 
 ## Advanced Docs
