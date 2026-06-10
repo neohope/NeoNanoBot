@@ -118,8 +118,6 @@ pip install --upgrade neonanobot-ai
 ```
 
 **Important Notes:**
-- Keep `litellm` updated to the latest version for security fixes
-- We've updated `ws` to `>=8.17.1` to fix DoS vulnerability
 - Run `pip-audit` or `npm audit` regularly
 - Subscribe to security advisories for neonanobot and its dependencies
 

@@ -61,7 +61,7 @@ bun run dev
 
 Then open `http://127.0.0.1:5173`.
 
-By default the dev server proxies `/api`, `/webui`, and `/auth` to `http://127.0.0.1:4321`. The app WebSocket connects directly to the gateway rather than through the dev server.
+By default the dev server proxies `/api` and `/webui` to `http://127.0.0.1:4321`. The app WebSocket connects directly to the gateway rather than through the dev server.
 
 If your gateway listens on a non-default port, point the dev server at it:
 
