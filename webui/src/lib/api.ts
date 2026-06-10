@@ -53,10 +53,7 @@ function splitKey(key: string): { channel: string; chatId: string } {
   return { channel: key.slice(0, idx), chatId: key.slice(idx + 1) };
 }
 
-export async function listSessions(
-  token: string,
-  base: string = "",
-): Promise<ChatSummary[]> {
+export async function listSessions(token: string): Promise<ChatSummary[]> {
   type Row = {
     key: string;
     created_at: string | null;
@@ -66,10 +63,7 @@ export async function listSessions(
     run_started_at?: number | null;
     workspace_scope?: WorkspaceScopePayload | null;
   };
-  const body = await request<{ sessions: Row[] }>(
-    `${base}/api/sessions`,
-    token,
-  );
+  const body = await request<{ sessions: Row[] }>("/api/sessions", token);
   return body.sessions.map((s) => ({
     key: s.key,
     ...splitKey(s.key),
@@ -86,9 +80,8 @@ export async function listSessions(
 export async function fetchWebuiThread(
   token: string,
   key: string,
-  base: string = "",
 ): Promise<WebuiThreadPersistedPayload | null> {
-  const url = `${base}/api/sessions/${encodeURIComponent(key)}/webui-thread`;
+  const url = `/api/sessions/${encodeURIComponent(key)}/webui-thread`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     credentials: "same-origin",
@@ -101,26 +94,18 @@ export async function fetchWebuiThread(
 export async function deleteSession(
   token: string,
   key: string,
-  base: string = "",
-): Promise<boolean> {
-  const body = await request<{ deleted: boolean }>(
-    `${base}/api/sessions/${encodeURIComponent(key)}/delete`,
+): Promise<void> {
+  await request<{ deleted: boolean }>(
+    `/api/sessions/${encodeURIComponent(key)}/delete`,
     token,
   );
-  return body.deleted;
 }
 
-export async function fetchWorkspaces(
-  token: string,
-  base: string = "",
-): Promise<WorkspacesPayload> {
-  return request<WorkspacesPayload>(`${base}/api/workspaces`, token);
+export async function fetchWorkspaces(token: string): Promise<WorkspacesPayload> {
+  return request<WorkspacesPayload>("/api/workspaces", token);
 }
 
-export async function listSlashCommands(
-  token: string,
-  base: string = "",
-): Promise<SlashCommand[]> {
+export async function listSlashCommands(token: string): Promise<SlashCommand[]> {
   type Row = {
     command: string;
     title: string;
@@ -128,7 +113,7 @@ export async function listSlashCommands(
     icon: string;
     arg_hint?: string;
   };
-  const body = await request<{ commands: Row[] }>(`${base}/api/commands`, token);
+  const body = await request<{ commands: Row[] }>("/api/commands", token);
   return body.commands
     .filter((command) => !["/stop", "/restart"].includes(command.command))
     .map((command) => ({
@@ -140,22 +125,18 @@ export async function listSlashCommands(
     }));
 }
 
-export async function fetchSidebarState(
-  token: string,
-  base: string = "",
-): Promise<SidebarStatePayload> {
-  return request<SidebarStatePayload>(`${base}/api/webui/sidebar-state`, token);
+export async function fetchSidebarState(token: string): Promise<SidebarStatePayload> {
+  return request<SidebarStatePayload>("/api/webui/sidebar-state", token);
 }
 
 export async function updateSidebarState(
   token: string,
   state: SidebarStatePayload,
-  base: string = "",
 ): Promise<SidebarStatePayload> {
   const query = new URLSearchParams();
   query.set("state", JSON.stringify(state));
   return request<SidebarStatePayload>(
-    `${base}/api/webui/sidebar-state/update?${query}`,
+    `/api/webui/sidebar-state/update?${query}`,
     token,
   );
 }
